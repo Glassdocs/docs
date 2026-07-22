@@ -30,7 +30,7 @@ jobs:
     uses: Glassdocs/publisher/.github/workflows/deploy-pages.yml@v1
     with:
       project-name: ${{ vars.CF_PAGES_PROJECT }}
-      email-domain: ${{ vars.EMAIL_DOMAIN }}
-      client-domain: ${{ vars.CLIENT_DOMAIN }}
-      client-emails: ${{ vars.CLIENT_EMAILS }}
+      # This is the Glassdocs product documentation — world-readable by
+      # explicit opt-in. Access-grant variables are intentionally absent.
+      public: true
     secrets: inherit

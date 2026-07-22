@@ -1,7 +1,7 @@
 # Glassdocs KB template — built with Zensical (the MkDocs successor).
 # Zensical reads this mkdocs.yml unchanged. Customise: site_name, nav.
-site_name: Knowledge Base
-site_description: A knowledge base published with Glassdocs.
+site_name: Glassdocs Documentation
+site_description: Complete documentation for Glassdocs — Markdown knowledge bases, secure publishing, and the AI docs-chat extension. This site is itself a Glassdocs KB, published with the Glassdocs publisher.
 docs_dir: docs
 
 theme:
@@ -71,5 +71,14 @@ extra:
   generator: false
 
 nav:
-  - Home: index.md
+  - What is Glassdocs: index.md
   - Getting Started: getting-started.md
+  - How It Works: how-it-works.md
+  - Writing a KB: authoring.md
+  - Publishing: publishing.md
+  - Managed Hosting: hosting.md
+  - Admin Dashboard: admin.md
+  - Browser Extension: extension.md
+  - Enterprise Deployment: enterprise.md
+  - API Reference: api.md
+  - Security & Privacy: security.md
