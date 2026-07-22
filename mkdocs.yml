@@ -2,6 +2,7 @@
 # Zensical reads this mkdocs.yml unchanged. Customise: site_name, nav.
 site_name: Glassdocs Documentation
 site_description: Complete documentation for Glassdocs — Markdown knowledge bases, secure publishing, and the AI docs-chat extension. This site is itself a Glassdocs KB, published with the Glassdocs publisher.
+site_url: https://docs.glassdocs.site/
 docs_dir: docs
 
 theme:
