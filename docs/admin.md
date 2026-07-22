@@ -32,7 +32,7 @@ Knowledge-base features need the **Glassdocs GitHub App** installed on your org.
 1. Click **Install the Glassdocs app on GitHub**, pick your org, choose which repos to grant, and approve.
 2. Back in the dashboard, click **I've installed it — recheck**.
 
-The app asks for **least-privilege** access — read and write repo contents (scaffolding and editor commits), Actions variables, workflows, secrets (sealing your Cloudflare token), and pull requests (for protected branches). It **never creates or deletes repos**, and never stores your content. The installation record is the only thing Glassdocs keeps, and the grant is yours to revoke at any time by uninstalling the app.
+The app asks for **least-privilege** access — read and write repo contents (scaffolding the KB starter files), Actions variables, workflows, secrets (sealing your Cloudflare token), and pull requests (for protected branches). It **never creates or deletes repos**, and never stores your content. The installation record is the only thing Glassdocs keeps, and the grant is yours to revoke at any time by uninstalling the app.
 
 ## Knowledge bases
 
@@ -62,7 +62,7 @@ Watch the status chip in the KB list; a failed run names the step that broke and
 
 Each KB row offers:
 
-- **✎ Pages** — an in-console editor for the KB's `docs/*.md`. Edit a page, create a new one, or use **✨ Assist** for an AI suggestion that you preview and explicitly **Apply**; **Save & republish** commits to the repo and redeploys. Content passes through, but is never stored by, Glassdocs.
+- **📄 Pages** — a read-only viewer for the KB's `docs/*.md`: browse what each page contains without leaving the console, with an **Edit on GitHub** link per page. Editing itself lives in the [extension's Edit mode](extension.md) or on GitHub, where changes carry your own identity and the nav (`mkdocs.yml`) can be updated too. Content passes through, but is never stored by, Glassdocs.
 - **Access** — loads the KB's **current live** staff/client values, lets you change them, and **Save & redeploy** applies the new policy. Clearing every field locks the site to no one (fail-closed) — this panel is also how you recover a locked-out KB: set the staff domain and save.
 - **☁ Cloudflare** — re-connect and re-seal the Cloudflare token for this KB (the fix for a "check Cloudflare credentials" deploy failure), then **Redeploy**.
 - **Redeploy** — trigger a fresh deploy of the current content.

@@ -16,7 +16,7 @@ Glassdocs orchestrates; it does not host your data. The data plane — content, 
 | Usage counters | Glassdocs — **token counts only**, never prompts or responses |
 | KB inventory and audit log | Glassdocs — the inventory is regenerable from GitHub; audit records hold metadata (e.g. a file path and byte count), never content |
 
-Editing keeps the same invariant: whether you edit through the [extension](extension.md) or the [in-console editor](admin.md), the page body only *transits* the control plane — no document body is ever written to Glassdocs storage. Unsaved edits live in your browser.
+Editing keeps the same invariant: edits go through the [extension](extension.md) (the console offers a read-only page viewer), and the page body only *transits* the control plane — no document body is ever written to Glassdocs storage. Unsaved edits live in your browser.
 
 ## Authentication
 
@@ -40,7 +40,7 @@ Every admin route verifies you are a **GitHub admin of the org in question** bef
 
 ### The server acting on your repos — installation tokens
 
-To configure or deploy a KB, the backend acts as the **GitHub App installation on your org** — never with an admin's personal token. It mints short-lived (1-hour) installation tokens scoped to your installation, and only after the org-admin check above. The app's footprint: read and write repo contents (scaffolding and the in-console editor commit files), read/write Actions variables, workflows, and secrets (the Cloudflare connect flow seals your token into repo secrets), and pull requests (protected-branch setup PRs); it never creates or deletes repos. Uninstalling the app revokes everything.
+To configure or deploy a KB, the backend acts as the **GitHub App installation on your org** — never with an admin's personal token. It mints short-lived (1-hour) installation tokens scoped to your installation, and only after the org-admin check above. The app's footprint: read and write repo contents (scaffolding commits the KB starter files), read/write Actions variables, workflows, and secrets (the Cloudflare connect flow seals your token into repo secrets), and pull requests (protected-branch setup PRs); it never creates or deletes repos. Uninstalling the app revokes everything.
 
 ## How page content reaches AI backends
 
@@ -58,7 +58,7 @@ Nothing is sent anywhere until you act. The extension reads the **active tab onl
     - **resolves the key**: your org's shared key if an admin configured one (see [the admin dashboard](admin.md)), otherwise the Glassdocs free-tier key with fair-use caps;
     - **forwards the request and returns the response complete** (streaming is disabled server-side), persisting **only token counts** for metering — never the prompt, the page content, or the model's reply.
 
-    The in-console editor's AI Assist uses the same core with the same guarantees, authenticated by the admin session instead of a bearer token. Switch to a BYO-key backend at any time to keep everything browser-to-provider.
+    Switch to a BYO-key backend at any time to keep everything browser-to-provider.
 
 Reads and writes to your repos (fetching source files, commits, pull requests) go from your browser to the GitHub API with your own token, and are attributed to your GitHub identity.
 
