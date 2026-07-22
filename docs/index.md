@@ -33,7 +33,7 @@ That's it. The site is built by **Zensical**, the MkDocs successor from the Mate
 
 Glassdocs is a **zero-data control plane**. Publishing runs in **your own GitHub Actions**, with **your own Cloudflare credentials**, deploying to **your own Cloudflare Pages** project behind **Cloudflare Access**:
 
-- **Nothing is public by default.** Access is fail-closed: a KB with no access rules deploys locked to nobody, and every deploy verifies the gate is actually up — rolling itself back rather than leaving content exposed.
+- **Nothing is public by default.** Access is fail-closed: a KB with no access rules deploys locked to nobody, and every deploy verifies the gate is actually up — rolling itself back rather than leaving content exposed. The only way to publish openly is the publisher's explicit `public: true` input (this documentation site deploys that way), in which case the post-deploy check verifies the site is reachable instead. See [Publishing](publishing.md#public-mode).
 - **You keep custody.** Glassdocs never creates or deletes repos, never stores your Cloudflare token (it is sealed into your repo as an Actions secret), and never stores your document content, prompts, or AI responses.
 - **Revocation is yours.** Uninstall the Glassdocs GitHub App and the grant is gone.
 
@@ -49,7 +49,7 @@ The Glassdocs browser extension (Docs Chat) attaches an AI side panel to any pub
 A site opts in with a single meta tag naming its source repository — no SDK, no embedded script. AI calls go through the managed backend at [app.glassdocs.site](https://app.glassdocs.site), which supports a free tier or your organization's own AI provider key, and meters token counts only. See the [Extension guide](extension.md) and [How it works](how-it-works.md).
 
 !!! note "Your docs never leave your accounts"
-    This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, and an audit log — and nothing else. See [Security](security.md).
+    This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, an audit log, a small registry of which repos are set up as KBs, and the GitHub App installation record — never your documents. See [Security](security.md).
 
 ## What Glassdocs is not
 

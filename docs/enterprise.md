@@ -6,9 +6,9 @@ Organizations on Google Workspace / Chrome Enterprise (or any MDM) can roll the 
 
 The extension reads its policy from Chrome's read-only **managed storage** (the schema ships with the extension as `managed_schema.json`). An admin pushes the configuration once and every install in scope picks it up.
 
-- Any field you set **overrides** the user's own value and **locks** it in the extension's Options page, shown under a "managed by your organization" banner.
-- Any field you leave out stays user-controlled.
-- **GitHub sign-in is never pushed.** It stays per-user, so commits and PRs remain attributed to the individual even when the AI key is shared.
+- Locking is per **top-level key**: pushing any part of a provider block (e.g. `claude`) **overrides** and **locks** that whole block in the extension's Options page — including fields inside it you didn't set — shown under a "managed by your organization" banner.
+- Top-level keys you leave out entirely stay user-controlled.
+- **GitHub sign-in stays per-user by default.** The schema does allow an optional `claude.githubToken` — a shared commit token used as a fallback for users who haven't signed in personally — but leave it unset so commits and PRs stay attributed to the individual, even when the AI key is shared.
 
 The policy keys mirror the extension's settings:
 
@@ -17,6 +17,7 @@ The policy keys mirror the extension's settings:
 | `adapter` | `"managed"` \| `"claude"` \| `"openai"` \| `"github-models"` |
 | `managed.baseUrl` | Self-hosted backend URL (up to `/v1`); omit for the hosted default |
 | `claude.apiKey` / `claude.model` | Shared Anthropic key + model |
+| `claude.githubToken` | Optional shared GitHub commit token, used as a fallback for users who haven't signed in personally. **Caution:** commits made with it are attributed to the token's account, not the individual — recommend leaving it unset |
 | `openai.apiKey` / `openai.model` | Shared OpenAI key + model |
 | `githubModels.token` / `githubModels.model` | GitHub Models token (needs `models:read`) + model |
 

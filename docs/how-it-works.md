@@ -7,7 +7,7 @@ Glassdocs is a **zero-data control plane**: it orchestrates repos, deploys, acce
 | Component | Where it runs | What it does |
 |---|---|---|
 | **KB repo** | Your GitHub org | The source of truth: `docs/*.md` pages and `mkdocs.yml` (nav + theme). Created by you from the [kb-template](https://github.com/Glassdocs/kb-template/generate). |
-| **Publisher workflow** | Your GitHub Actions | The reusable deploy workflow shipped with the template. Builds the KB with **Zensical** and deploys to Cloudflare Pages, with fail-closed access gating. |
+| **Publisher workflow** | Your GitHub Actions | The template ships a thin caller workflow; the reusable publisher it invokes lives in the tag-pinned [`Glassdocs/publisher`](https://github.com/Glassdocs/publisher) repo (`@v1`). Builds the KB with **Zensical** and deploys to Cloudflare Pages, with fail-closed access gating. |
 | **Cloudflare Pages + Access** | Your Cloudflare account | Hosts the built site at `<project>.pages.dev`; Cloudflare Access gates every request behind an email-based policy. |
 | **Managed backend** | [app.glassdocs.site](https://app.glassdocs.site) | The control plane: admin console, GitHub App integration, AI proxy, usage metering, audit log. Holds identity and tokens — never content. |
 | **Browser extension** | The reader's browser | Docs Chat: an AI side panel on published pages for asking questions and proposing edits back to the source repo. |
@@ -62,12 +62,14 @@ When you push to the KB repo (or trigger a redeploy from the admin), the publish
 
 1. **Fail-closed on first deploy** — if the Cloudflare Access app can't be created, the workflow aborts *before* publishing any content.
 2. **Pre-flight block** — if the domain is already publicly reachable (HTTP 2xx), the deploy fails: the gate isn't active.
-3. **Post-deploy verify-or-rollback** — after deploying, the workflow probes the site again; if it's public, the deployment is deleted, re-probed, and escalated until the exposure is actually closed. It never reports success on an open site.
-4. **Independent policy verification** — every deploy re-derives the expected Access policy from its inputs and compares it to the live policy; any mismatch (a manual dashboard edit, a sync bug) fails the deploy.
-5. **Preview deployments disabled** — no per-branch preview URLs that could bypass the gate.
+3. **Post-deploy verify-or-rollback** — after deploying, the workflow probes the site again; if it's public, the latest deployment is deleted and the run fails. It never reports success on a gate it couldn't prove was up.
+4. **Reconcile by replace** — every deploy deletes the existing Access policies on the app and recreates them from the repo variables, so the live policy always matches the declared inputs; a manual dashboard edit doesn't linger — it's overwritten on the next deploy.
+5. **No preview deployments** — the direct-upload flow never creates per-branch preview URLs, though no Pages setting currently disables them outright (tracked in [Glassdocs/publisher#3](https://github.com/Glassdocs/publisher/issues/3)).
 
 !!! tip "A broken deploy is better than a public deploy"
     These invariants are the difference between "private KB" and "a client's confidential docs exposed publicly". They are non-negotiable and verified independently on every run. See [Publishing](publishing.md) and [Security](security.md).
+
+The one exception is explicit: a KB can opt in to being fully public with the publisher's `public: true` input. In that mode no Access app is created (an existing gate on the domain is removed), and the post-deploy check inverts — it requires the site to answer HTTP 200. The default remains locked; this documentation site is published this way. See [Publishing](publishing.md#public-mode).
 
 ## Access: policy lives in your repo, not in Glassdocs
 
@@ -84,7 +86,7 @@ A single Glassdocs GitHub App covers both directions of trust:
 - **User-to-server (device flow)** — the extension signs each user in with their own GitHub identity. Tokens live in the browser's extension storage, never server-side; refresh, expiry, and revocation are handled transparently. Edits are committed as the actual person, not a shared bot.
 - **Installation tokens** — for control-plane actions on your repos (setting variables, dispatching deploys, the in-console editor). The backend mints a short-lived (1-hour) installation token scoped to your org, and every admin route verifies the caller is an admin of that org **before** minting one.
 
-You install the App on your org and select repos. The permission footprint is deliberately small — contents read plus Actions write; no repo-creation or administration scope. Glassdocs stores only the installation record; uninstalling the App revokes everything. See [Admin](admin.md).
+You install the App on your org and select repos. The permission footprint is deliberately small — contents write (scaffolding and editor commits), Actions variables, workflows, secrets, and pull requests; no repo-creation or administration scope. Glassdocs stores only the installation record; uninstalling the App revokes everything. See [Admin](admin.md).
 
 ## Editing: two paths, both passthrough
 

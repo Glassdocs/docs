@@ -32,7 +32,7 @@ Compatible with any Chromium browser that supports Manifest V3 and the side-pane
 
 ## Backends
 
-The extension is a chat surface; the actual AI calls go through a pluggable backend. Pick one in the side panel's backend dropdown or in Options.
+The extension is a chat surface; the actual AI calls go through a pluggable backend. Pick one in the extension's Options page.
 
 ### Managed (no key) — the default
 
@@ -80,12 +80,9 @@ That's the whole contract — no registry, no per-user setup. The extension read
 
 ### Where in-page affordances appear
 
-The side panel and repo detection work on **any** site that carries the `source-repo` meta tag. The in-page affordances (the "Edit this" control and highlight overlays, injected by the content script) appear only on:
+The side panel and repo detection work on **any** site that carries the `source-repo` meta tag. The in-page affordances (the "Edit this" control and highlight overlays, injected by the content script) load automatically only on `https://*.pages.dev/*` — docs sites published on Cloudflare Pages.
 
-- `https://*.pages.dev` — docs sites published on Cloudflare Pages
-- `*.glassdocs.site` — Glassdocs-hosted sites
-
-On other domains, open the side panel from the toolbar icon instead.
+On any other site — including `*.glassdocs.site` hosts — opening the side panel from the toolbar icon injects the content script into the active tab, so the affordances appear there once the panel is open.
 
 ## GitHub identity
 

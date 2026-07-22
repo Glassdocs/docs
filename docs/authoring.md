@@ -4,19 +4,19 @@ A Glassdocs knowledge base is Markdown, full stop: pages in `docs/*.md` plus one
 
 ## The Markdown-only rule
 
-Everything a reader sees comes from Markdown. No custom HTML pages, no forked themes, no build scripts, no stylesheets copied into your repo.
+Everything a reader sees comes from Markdown. No custom HTML pages, no forked themes, no build scripts. The one stylesheet in your repo is the template's own `docs/stylesheets/extra.css`, which carries brand tokens; you don't add others.
 
 Why this is a hard rule and not a style preference:
 
 - **Your content stays portable.** A folder of Markdown files diffs cleanly, reviews cleanly in pull requests, and would still be readable if you walked away from Glassdocs tomorrow.
 - **Publishing is centralized.** Build tooling, security headers, and content checks are maintained in the [publisher](how-it-works.md) and run at deploy time. Your repo never accumulates publishing machinery that drifts out of date.
-- **The pipeline enforces it.** The publisher runs a compliance lint on every deploy before anything else happens. Tracked custom HTML fails the build.
+- **The pipeline enforces the shape.** The publisher runs a compliance lint on every deploy before anything else happens: `mkdocs.yml` must exist, tracked HTML under `docs/` fails the build, and commercial filenames are blocked. The rest of the rule (no forked themes, no build scripts) is convention rather than enforcement, but it is what keeps the guarantees above true.
 - **Pages map back to source.** At deploy time the publisher injects metadata linking each published page to its Markdown file, which is what lets the [browser extension](extension.md) recognize your site and edit the right file.
 
 The only non-content file your repo carries is `.github/workflows/deploy.yml`, which has to live in its standard location to trigger CI. See [Publishing](publishing.md) for what it does.
 
 !!! warning "No commercial content in project KBs"
-    Statements of work, proposals, estimates, rate cards, pricing, and contractual documents do not belong in a project knowledge base. Project KBs are for technical documentation, architecture, and project knowledge. The compliance lint blocks financial content unless the deploy explicitly opts in with `allow-financial: true`, which is intended only for dedicated pre-sales KBs.
+    Statements of work, rate cards, pricing, quotes, invoices, and contracts do not belong in a project knowledge base. Project KBs are for technical documentation, architecture, and project knowledge. The compliance lint blocks filenames matching `sow`, `rate-card`, `pricing`, `quote`, `invoice`, or `contract` (as `.md`, `.pdf`, or `.docx` under `docs/`) unless the deploy explicitly opts in with `allow-financial: true`, which is intended only for dedicated pre-sales KBs. Effort-only artefacts like `proposal.md`, `estimate.md`, and `plan.md` are deliberately exempt: work breakdowns and dev-day estimates are project planning, not commerce.
 
 ## Template structure
 

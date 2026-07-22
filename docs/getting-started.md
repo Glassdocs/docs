@@ -16,7 +16,7 @@ You need two things:
 
 Open the [Glassdocs admin](https://app.glassdocs.site), sign in with GitHub, and select your organization. If the app isn't installed yet, you'll be prompted to **Install the Glassdocs app on GitHub**.
 
-The app asks for **least-privilege** access — it can read your code and read/write Actions variables and workflows. It **never creates or deletes repos**, and never stores your content. On GitHub, pick your org, choose which repos to grant, and approve. Then come back to the admin and click **recheck**.
+The app asks for **least-privilege** access — it can read and write repo contents (for scaffolding KB files and committing editor changes), Actions variables, workflows, secrets (sealing your Cloudflare token), and pull requests (for protected branches). It **never creates or deletes repos**, and never stores your content. On GitHub, pick your org, choose which repos to grant, and approve. Then come back to the admin and click **recheck**.
 
 The installation record is the only thing Glassdocs keeps. The grant is yours to revoke at any time by uninstalling the app.
 
@@ -47,7 +47,7 @@ Back in the [Glassdocs admin](https://app.glassdocs.site), with your org selecte
 
 In the setup form, use the **Connect Cloudflare** section:
 
-1. Click **Create token on Cloudflare**. The link pre-selects **exactly** the two permissions Glassdocs needs — **Cloudflare Pages: Edit** and **Access: Edit** — so you don't have to pick any permissions yourself. Create the token.
+1. Click **Create token on Cloudflare**. The link pre-selects **exactly** the two permissions Glassdocs needs — **Cloudflare Pages: Edit** and **Access: Apps and Policies: Edit** — so you don't have to pick any permissions yourself. Before clicking Create, confirm both permission rows show **Edit** — a read-only token connects but can't deploy. Create the token.
 2. Paste the token into the field and press **Connect** (for the selected repo).
 
 Glassdocs verifies the token and **seals it into the repo as an Actions secret**. The token is **never stored by Glassdocs** — from here on, only your own GitHub Actions use it.
@@ -71,7 +71,7 @@ You can change access on an existing KB anytime via **Access** on the KB — the
 
 ## Step 6 — Set up & deploy
 
-Click **Set up & deploy**. Glassdocs configures the existing repo (writing the Pages-project and access variables) and dispatches the first deploy. From here everything runs in **your** GitHub Actions:
+Click **Set up & deploy**. Glassdocs configures the existing repo (writing the Pages-project and access variables) and dispatches the first deploy. Two variations: if Cloudflare isn't connected yet, the dispatch is skipped with a warning until you connect; and if the default branch is protected, Glassdocs opens a setup PR instead — merging it triggers the first deploy (the KB row shows "setup PR #N — merge to publish"). From here everything runs in **your** GitHub Actions:
 
 - The workflow **builds your Markdown KB with Zensical** into a site.
 - It **deploys that site to your Cloudflare Pages** project.
@@ -117,7 +117,7 @@ Cloudflare enforces a **name-reuse cooldown** after a Pages project is deleted. 
 Almost always this is a **wrong Cloudflare account**. Check that the KB is connected to the account you intended — when a token spans multiple accounts, the account you picked at Connect time is where the site lives. Reconnect Cloudflare (step 4) with the correct account if needed. This is why picking **one** Cloudflare account for all your KBs up front saves grief.
 
 **The deploy fails at the Access step.**
-The publisher is deliberately **fail-closed**: if it can't create or verify the Cloudflare Access policy, it aborts before publishing rather than risk exposing your content. Check that the connected token still has **Access: Edit** (and **Pages: Edit**), then redeploy.
+The publisher is deliberately **fail-closed**: if it can't create or verify the Cloudflare Access policy, it aborts before publishing rather than risk exposing your content. Check that the connected token still has **Access: Apps and Policies: Edit** (and **Cloudflare Pages: Edit**), then redeploy.
 
 ## How this maps to the security model
 

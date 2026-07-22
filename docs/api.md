@@ -64,7 +64,7 @@ The request body is OpenAI-format, but a few fields are controlled server-side:
 | `200` | Completion succeeded; OpenAI-format body. |
 | `400` | Unreadable or invalid JSON body. |
 | `401` | Missing or invalid GitHub token. |
-| `413` | Request too large — trim the prompt or page context and retry. |
+| `413` | Request too large — trim the prompt or page context and retry. Free tier only: this is an input-size estimate on free-tier requests; org-shared-key requests aren't size-checked. |
 | `429` | Free-tier cap hit: either your personal daily limit (resets tomorrow, UTC) or Glassdocs' global daily capacity. |
 | `503` | GitHub identity verification temporarily unavailable — retry. |
 | other | Upstream provider errors are passed through with the provider's status code. |
@@ -100,7 +100,7 @@ Response:
 | --- | --- |
 | `login` | Your GitHub login, as verified from the token. |
 | `tenant` | The tenant this identity resolves to: `id`, `kind`, and `plan`. |
-| `orgs` | GitHub organizations the token can see (used to resolve org billing). |
+| `orgs` | GitHub organizations the token can see. Informational only — org billing on `/v1` is resolved by a server-side seat lookup, not this list. |
 | `budget.perUserDaily` | Your daily free-tier token cap; `null` means uncapped. |
 | `budget.usedToday` | Tokens consumed so far today (UTC day). |
 | `budget.remaining` | Tokens left today; `null` when uncapped. |
@@ -115,7 +115,7 @@ The budget shown here is computed with the same defaults the `/v1` enforcer uses
 
 ## Self-hosting
 
-The backend is the same software whether Glassdocs hosts it or you do. A self-hosted deployment exposes the same two endpoints; point the extension's **Managed base URL** (up to `/v1`) at your host, or push it to your whole organization via [enterprise policy](enterprise.md). See [Hosting](hosting.md) for the deployment options.
+The backend is the same software whether Glassdocs hosts it or you do. The two endpoints above are the surface for the extension and API consumers; the server also exposes the admin/control-plane API used by the [admin dashboard](admin.md) — GitHub OAuth sign-in plus `/api/admin/org/...` routes for org configuration, keys, access, and KB setup. A self-hosted deployment ships the full surface. Point the extension's **Managed base URL** (up to `/v1`) at your host, or push it to your whole organization via [enterprise policy](enterprise.md). See [Hosting](hosting.md) for the deployment options.
 
 ## See also
 

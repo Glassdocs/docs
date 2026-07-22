@@ -20,8 +20,8 @@ The live hosting product is a zero-data control plane over the client-hosted pat
 
 Setup from the [admin dashboard](admin.md) takes about five minutes:
 
-1. **Install the Glassdocs GitHub App** on your org. It asks for least-privilege access (read code, read/write Actions variables and workflows), and an owner approves.
-2. **Create your repo from the KB template** at [github.com/Glassdocs/kb-template/generate](https://github.com/Glassdocs/kb-template/generate). Glassdocs never creates repos for you.
+1. **Install the Glassdocs GitHub App** on your org. It asks for a least-privilege footprint: read/write repo contents (scaffolding and editor commits), Actions variables, workflows, secrets (sealing the Cloudflare token), and pull requests (for protected-branch PRs). It never creates or deletes repos, and an owner approves.
+2. **Create your repo from the KB template** at [github.com/Glassdocs/kb-template/generate](https://github.com/Glassdocs/kb-template/generate), or point setup at any existing repo: the wizard's "Add Glassdocs KB files" option scaffolds the KB files into it, template not required. Glassdocs never creates repos for you.
 3. **Pick the repo in the dashboard** and name the Cloudflare Pages project. If the KB already has a live site, use that project's exact existing name; a new name spins up a second, separate site and orphans the real one.
 4. **Connect Cloudflare with one paste.** A pre-scoped token link selects exactly the two permission groups the publisher needs. Create the token, paste it, press Connect. Glassdocs verifies it and seals it into the repo; the token is never stored by Glassdocs.
 5. **Set who can read it.** Set a staff domain for your team, plus optional client access. Access is fail-closed: leave every field blank and the site deploys locked to nobody, not "staff-only". The Access panel is also how you recover a locked-out KB later.

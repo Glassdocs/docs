@@ -17,7 +17,7 @@ The **Shared AI key** card lets you set **one provider key for your whole GitHub
 On the card you can:
 
 - **Choose a provider** — OpenAI or Anthropic — and a **model** (any model your key can access; a custom model already configured is preserved in the list).
-- **Set or replace the key.** It is stored AES-encrypted at rest, sent only to the AI provider, and never shown to your members. The card records which admin last updated it. Leaving the field blank on save keeps the existing key.
+- **Set or replace the key.** It is stored AES-encrypted at rest, sent only to the AI provider, and never shown to your members. The card records which admin last updated it. Leaving the field blank on save keeps the existing key — but only while the provider stays the same; switching provider requires entering a key for the new provider (the save is rejected otherwise).
 - **Sync members** — refresh the org membership so new teammates resolve to the shared key.
 - **Remove key** — members lose managed AI until you set a new one.
 - **Watch usage** — the card shows member count plus tokens used today and in total. Only token *counts* are metered; prompts and responses are never stored (see [Security & privacy](security.md)).
@@ -32,7 +32,7 @@ Knowledge-base features need the **Glassdocs GitHub App** installed on your org.
 1. Click **Install the Glassdocs app on GitHub**, pick your org, choose which repos to grant, and approve.
 2. Back in the dashboard, click **I've installed it — recheck**.
 
-The app asks for **least-privilege** access — read code, and read/write Actions variables and workflows. It **never creates or deletes repos**, and never stores your content. The installation record is the only thing Glassdocs keeps, and the grant is yours to revoke at any time by uninstalling the app.
+The app asks for **least-privilege** access — read and write repo contents (scaffolding and editor commits), Actions variables, workflows, secrets (sealing your Cloudflare token), and pull requests (for protected branches). It **never creates or deletes repos**, and never stores your content. The installation record is the only thing Glassdocs keeps, and the grant is yours to revoke at any time by uninstalling the app.
 
 ## Knowledge bases
 

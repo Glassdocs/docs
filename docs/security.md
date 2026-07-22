@@ -40,7 +40,7 @@ Every admin route verifies you are a **GitHub admin of the org in question** bef
 
 ### The server acting on your repos — installation tokens
 
-To configure or deploy a KB, the backend acts as the **GitHub App installation on your org** — never with an admin's personal token. It mints short-lived (1-hour) installation tokens scoped to your installation, and only after the org-admin check above. The app's footprint is least-privilege: read code, read/write Actions variables and workflows; it never creates or deletes repos. Uninstalling the app revokes everything.
+To configure or deploy a KB, the backend acts as the **GitHub App installation on your org** — never with an admin's personal token. It mints short-lived (1-hour) installation tokens scoped to your installation, and only after the org-admin check above. The app's footprint: read and write repo contents (scaffolding and the in-console editor commit files), read/write Actions variables, workflows, and secrets (the Cloudflare connect flow seals your token into repo secrets), and pull requests (protected-branch setup PRs); it never creates or deletes repos. Uninstalling the app revokes everything.
 
 ## How page content reaches AI backends
 
@@ -56,7 +56,7 @@ Nothing is sent anywhere until you act. The extension reads the **active tab onl
 
     - **verifies your identity** by checking your GitHub token against GitHub per request — the token is verified and discarded, never stored server-side;
     - **resolves the key**: your org's shared key if an admin configured one (see [the admin dashboard](admin.md)), otherwise the Glassdocs free-tier key with fair-use caps;
-    - **streams the request and response straight through**, persisting **only token counts** for metering — never the prompt, the page content, or the model's reply.
+    - **forwards the request and returns the response complete** (streaming is disabled server-side), persisting **only token counts** for metering — never the prompt, the page content, or the model's reply.
 
     The in-console editor's AI Assist uses the same core with the same guarantees, authenticated by the admin session instead of a bearer token. Switch to a BYO-key backend at any time to keep everything browser-to-provider.
 
