@@ -1,19 +1,13 @@
 name: Docs Deploy
 
-# Publishes this KB via the Glassdocs secure reusable publisher. Cloudflare
-# Access is enforced at the platform — a pre-flight check blocks a publicly
-# reachable site, the deploy is rolled back if the site is reachable after
-# publish, and preview deployments are disabled. No per-repo access code.
+# Publishes the Glassdocs product documentation via the Glassdocs reusable
+# publisher. This KB is world-readable by explicit opt-in (`public: true`
+# below): no Cloudflare Access gate, and the post-deploy check verifies the
+# site actually serves content. Gated KBs use the same publisher with the
+# access variables instead — see docs/publishing.md.
 #
-# Required repo variable:  CF_PAGES_PROJECT   (e.g. acme-handbook → acme-handbook.pages.dev)
-# Optional repo variables:
-#   EMAIL_DOMAIN    staff email domain granted access (e.g. acme.com)
-#   CLIENT_DOMAIN   one client email domain granted access
-#   CLIENT_EMAILS   comma-separated client emails granted access
+# Required repo variable:  CF_PAGES_PROJECT   (glassdocs-docs → docs.glassdocs.site)
 # Org secrets inherited:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-#
-# Fail-closed: with none of EMAIL_DOMAIN / CLIENT_DOMAIN / CLIENT_EMAILS set,
-# the site deploys locked (no one is granted access) rather than public.
 
 on:
   push:
