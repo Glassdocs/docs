@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" role="img" aria-label="Glassdocs">
+  <title>Glassdocs</title>
+  <!-- Placeholder wordmark. Inherits the surrounding text colour via
+       currentColor; the Glassdocs publisher swaps in brand assets at deploy. -->
+  <g fill="currentColor">
+    <path d="M18 6 L30 18 L18 30 L6 18 Z" opacity="0.9"/>
+  </g>
+  <text x="44" y="32" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="currentColor">Glassdocs</text>
+</svg>
