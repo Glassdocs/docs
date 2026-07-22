@@ -82,8 +82,8 @@ Published KBs are gated by **Cloudflare Access** on your own account: visitors m
 - **No default access.** A blank access field grants no one; a KB with nothing set deploys locked to nobody — never public by accident.
 - **Gate before content.** On first deploy, if the Access application can't be created, the deploy aborts *before* any content is published.
 - **Pre-flight check.** If the site is already publicly reachable, the deploy fails rather than proceed without an active gate.
-- **Verify or roll back.** After each deploy the workflow probes the site; if it's publicly readable, the deployment is deleted, re-probed, and escalated until the exposure is actually closed — success is never reported on an open exposure.
-- **Independent policy verification.** Every deploy re-derives the expected Access policy from its inputs and compares it to the live policy; a mismatch (for example a manual dashboard edit) fails the deploy.
+- **Verify or roll back.** After each deploy the workflow probes the site; the only accepted proof is an Access login redirect. Anything else — including a publicly readable site — deletes the deployment and fails the run, so success is never reported on an unproven gate.
+- **Policy reconciliation.** Every deploy deletes the Access app's existing policies and recreates them from the repo's declared variables, so the live policy always matches what the repo declares — a manual dashboard edit is overwritten on the next deploy.
 - **Preview deployments are never created by the publish flow** — only the production site is deployed. (No Pages setting disables previews outright yet; that hardening is tracked in [Glassdocs/publisher#3](https://github.com/Glassdocs/publisher/issues/3).)
 
 You can verify the gate yourself any time: open your site's URL signed out and confirm you're redirected to the Cloudflare Access login. See [Hosting](hosting.md).
