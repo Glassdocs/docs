@@ -12,11 +12,15 @@ Glassdocs orchestrates; it does not host your data. The data plane — content, 
 | Published site | Your Cloudflare Pages, deployed by your own GitHub Actions |
 | Read-access policy (who can view the site) | Your repo's Actions variables → Cloudflare Access |
 | GitHub App installation | Your GitHub org — revocation = uninstall |
-| Identity records and one AES-GCM-encrypted org AI key | Glassdocs (no content) |
-| Usage counters | Glassdocs — **token counts only**, never prompts or responses |
+| Identity records and one AES-GCM-encrypted org AI key | Glassdocs (org shared-key tier only, no content) |
+| Usage counters | Glassdocs — **token counts only**, never prompts or responses; per-request records exist only for the org shared-key tier |
 | KB inventory and audit log | Glassdocs — the inventory is regenerable from GitHub; audit records hold metadata (e.g. a file path and byte count), never content |
 
 Editing keeps the same invariant: edits go through the [extension](extension.md) (the console offers a read-only page viewer), and the page body only *transits* the control plane — no document body is ever written to Glassdocs storage. Unsaved edits live in your browser.
+
+### The free tier stores nothing about you
+
+On the free tier, Glassdocs keeps **no records about you at all** — no account rows, no per-request logs. If you use the extension with your own AI key, Glassdocs is not in the path and stores nothing. If you use the managed no-key AI, no record of your requests is kept either: the only trace is a set of **anonymous daily rate counters** used for abuse control — derived with a keyed hash (HMAC) so they cannot be mapped back to your GitHub login, unlinkable from one day to the next, and self-expiring at the end of each UTC day. The free tier includes up to 3 published KBs.
 
 ## Authentication
 
@@ -56,7 +60,7 @@ Nothing is sent anywhere until you act. The extension reads the **active tab onl
 
     - **verifies your identity** by checking your GitHub token against GitHub per request — the token is verified and discarded, never stored server-side;
     - **resolves the key**: your org's shared key if an admin configured one (see [the admin dashboard](admin.md)), otherwise the Glassdocs free-tier key with fair-use caps;
-    - **forwards the request and returns the response complete** (streaming is disabled server-side), persisting **only token counts** for metering — never the prompt, the page content, or the model's reply.
+    - **forwards the request and returns the response complete** (streaming is disabled server-side), persisting **only token counts** — never the prompt, the page content, or the model's reply. On the free tier even those counts are anonymous daily rate counters (see above); per-request metering records exist only when an org's own shared key pays.
 
     Switch to a BYO-key backend at any time to keep everything browser-to-provider.
 
