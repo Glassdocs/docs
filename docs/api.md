@@ -86,7 +86,8 @@ Response:
 ```json
 {
   "login": "octocat",
-  "tenant": { "id": "…", "kind": "individual", "plan": "free" },
+  "tenant": null,
+  "billing": "free",
   "orgs": ["your-org"],
   "budget": {
     "perUserDaily": 100000,
@@ -99,13 +100,14 @@ Response:
 | Field | Meaning |
 | --- | --- |
 | `login` | Your GitHub login, as verified from the token. |
-| `tenant` | The tenant this identity resolves to: `id`, `kind`, and `plan`. |
+| `tenant` | Always `null` — free-tier identities have no stored tenant record (see [Security](security.md)). Retained for wire compatibility. |
+| `billing` | `"org"` when an organization's shared key pays for your requests, `"free"` when Glassdocs' free tier does. |
 | `orgs` | GitHub organizations the token can see. Informational only — org billing on `/v1` is resolved by a server-side seat lookup, not this list. |
 | `budget.perUserDaily` | Your daily free-tier token cap; `null` means uncapped. |
 | `budget.usedToday` | Tokens consumed so far today (UTC day). |
 | `budget.remaining` | Tokens left today; `null` when uncapped. |
 
-The budget shown here is computed with the same defaults the `/v1` enforcer uses, so what you see is what is enforced.
+The budget shown here is computed with the same defaults the `/v1` enforcer uses, so what you see is what is enforced. When `billing` is `"org"` the free-tier numbers don't apply — your organization's key pays and Glassdocs enforces no cap.
 
 | Status | Meaning |
 | --- | --- |
