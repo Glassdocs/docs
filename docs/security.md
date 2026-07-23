@@ -86,6 +86,8 @@ Published KBs are gated by **Cloudflare Access** on your own account: visitors m
 - **Policy reconciliation.** Every deploy deletes the Access app's existing policies and recreates them from the repo's declared variables, so the live policy always matches what the repo declares — a manual dashboard edit is overwritten on the next deploy.
 - **Preview deployments are never created by the publish flow** — only the production site is deployed. (No Pages setting disables previews outright yet; that hardening is tracked in [Glassdocs/publisher#3](https://github.com/Glassdocs/publisher/issues/3).)
 
+"Nothing public by default" is enforced end-to-end, not at any single layer: making a KB public requires a strict explicit opt-in at every step — the [wizard checkbox](admin.md) defaults off, the API accepts only a strict boolean, and the [workflow input](publishing.md#public-mode) defaults to `false`. The admin's choice is authoritative over any pre-existing workflow state (a gated setup over a leftover public workflow restores the gate), and a deploy is never dispatched ahead of an unapplied access-mode change.
+
 You can verify the gate yourself any time: open your site's URL signed out and confirm you're redirected to the Cloudflare Access login. See [Hosting](hosting.md).
 
 ## What Glassdocs does not do

@@ -10,6 +10,8 @@ The Glassdocs admin dashboard at [app.glassdocs.site/admin](https://app.glassdoc
 1. Open [app.glassdocs.site/admin](https://app.glassdocs.site/admin/) and click **Sign in with GitHub**. This is a standard GitHub OAuth flow (scope `read:org`) that identifies you and your org roles.
 2. After sign-in, the dashboard shows an **Organization** picker listing every GitHub org you administer. Everything on the page — the shared key, the KB list, every action — is scoped to the selected org.
 
+Your dashboard session lasts about 8 hours. If it expires while a tab is still open, the page switches to the signed-out view with a "session expired" note rather than leaving a stale header — sign in again to continue.
+
 ## Set the org-wide shared AI key
 
 The **Shared AI key** card lets you set **one provider key for your whole GitHub org**. Your teammates just install the [extension](extension.md), sign in with GitHub, and start editing — their extension resolves to the org key automatically via a membership lookup, so **staff never paste a key**.
@@ -36,7 +38,7 @@ The app asks for **least-privilege** access — read and write repo contents (sc
 
 ## Knowledge bases
 
-The **Knowledge bases** card lists every KB in the org with its repo, published site URL (`<project>.pages.dev`), the Cloudflare account it deploys to, its access state (staff-only or client grants), and a **live deploy status chip** — queued, running, deployed, or failed — pulled straight from GitHub Actions and linked to the run logs. Status refreshes automatically (faster while a deploy is in flight) and on demand via **Refresh**, which re-crawls the org's repos.
+The **Knowledge bases** card lists every KB in the org with its repo, published site URL (`<project>.pages.dev`), the Cloudflare account it deploys to, its access state (staff-only, client grants, or a 🌐 **public** chip for explicitly public KBs), and a **live deploy status chip** — queued, running, deployed, or failed — pulled straight from GitHub Actions and linked to the run logs. Status refreshes automatically (faster while a deploy is in flight) and on demand via **Refresh**, which re-crawls the org's repos.
 
 ### Set up a KB
 
@@ -45,14 +47,14 @@ Glassdocs configures existing repos; it doesn't create them. First create a repo
 1. **Pick your repo and name the site.** Only repos the Glassdocs app can access appear — grant the app the repo (or click **Reload**) if yours is missing. The **Cloudflare Pages project** name becomes your site URL, `<project>.pages.dev`.
 
     !!! warning "Reconnecting an existing site?"
-        If the KB already has a live Pages site, enter that project's **exact** name — a new name creates a second, separate site and orphans the real one. After you connect Cloudflare, the form warns if the name you chose isn't an existing project on the account.
+        If the KB already has a live Pages site, enter that project's **exact** name — a new name creates a second, separate site and orphans the real one. After you connect Cloudflare, the form warns if the name you chose isn't an existing project on the account. A name that *does* match an existing project triggers a blocking confirmation at submit — deploying there replaces whatever that site currently serves. And a project name already registered to a **different** KB is refused outright (a hard 409, no override — and the error never names another customer's repo).
 
-2. **Connect Cloudflare.** Click **Create token on Cloudflare** — the link pre-selects exactly the two permissions the publisher needs (**Cloudflare Pages: Edit** and **Access: Apps and Policies: Edit**) and pre-fills a per-KB token name. Create the token, paste it, and press **Connect**. Glassdocs verifies the token and **seals it into the repo as a GitHub Actions secret** — the token is **never stored by Glassdocs**; from then on only your own CI uses it. If the token spans multiple Cloudflare accounts, the form asks which one to deploy to — use the same account for all your KBs.
+2. **Connect Cloudflare.** Click **Create token on Cloudflare** — the link pre-selects exactly the two permissions the publisher needs (**Cloudflare Pages: Edit** and **Access: Apps and Policies: Edit**) and pre-fills a per-KB token name. Create the token, paste it, and press **Connect**. Glassdocs verifies the token and **seals it into the repo as a GitHub Actions secret** — the token is **never stored by Glassdocs**; from then on only your own CI uses it. If the token spans multiple Cloudflare accounts, the form asks which one to deploy to — use the same account for all your KBs. If the repo already carried a `CLOUDFLARE_API_TOKEN` secret (say, for its own CI), Connect replaces it and warns you it did — re-check any other workflow that relied on the old one.
 
     !!! warning "Don't use Cloudflare's *Connect to Git*"
         Glassdocs publishes by direct upload from GitHub Actions. A Pages project wired to Git won't accept these deploys.
 
-3. **Set who can read it.** Access is **fail-closed with no default** — a blank field grants no one through that channel, and leaving *every* field blank deploys the site locked to nobody. Set the **Staff domain** (your org's email domain) to grant your whole team SSO read access; optionally add a **Client domain** or individual **Client emails** for external readers. See [Hosting](hosting.md) for the full access model.
+3. **Set who can read it.** Access is **fail-closed with no default** — a blank field grants no one through that channel, and leaving *every* field blank deploys the site locked to nobody. Set the **Staff domain** (your org's email domain) to grant your whole team SSO read access; optionally add a **Client domain** or individual **Client emails** for external readers. For docs meant for the whole world, tick **🌐 Public KB** instead — an explicit opt-in that publishes the site world-readable with **no** Access gate. Checking it disables and clears the staff/client fields (public and access grants are mutually exclusive); leaving it unchecked keeps the default staff-gated setup. See [Hosting](hosting.md) for the full access model and [Publishing](publishing.md#public-mode) for public mode.
 
 4. **Deploy.** Leave **Add Glassdocs KB files** checked if the repo didn't start from the template (it commits `deploy.yml`, `mkdocs.yml`, and `docs/`), then click **Set up & deploy**. Glassdocs writes the project and access variables to the repo and dispatches the first deploy in **your** GitHub Actions — which builds the Markdown with Zensical, publishes to your Cloudflare Pages, and creates the Cloudflare Access gate fail-closed. If the repo's default branch is protected, Glassdocs opens a pull request with the files instead and links it.
 

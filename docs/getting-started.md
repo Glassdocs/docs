@@ -65,7 +65,7 @@ Still in the setup form (and all editable later per KB):
 - **Client domain** *(optional)* — grants read access to everyone at an external email domain (e.g. `client.com`).
 - **Client emails** *(optional)* — a comma-separated list of individual addresses.
 
-Access is **fail-closed**, and there is **no default** — an access field left blank grants no one through that channel. In particular, leaving **every** field blank deploys the site **locked to nobody** (not "staff-only"). To let your team in, set the **Staff domain**. Nothing is ever public by default.
+Access is **fail-closed**, and there is **no default** — an access field left blank grants no one through that channel. In particular, leaving **every** field blank deploys the site **locked to nobody** (not "staff-only"). To let your team in, set the **Staff domain**. Nothing is ever public by default — though for docs genuinely meant for the whole world, the form's **🌐 Public KB** checkbox is the explicit opt-in for a world-readable, ungated site (see [public mode](publishing.md#public-mode)).
 
 You can change access on an existing KB anytime via **Access** on the KB — the panel loads the KB's current live values, and saving redeploys so the new policy takes effect. That's also how you recover a locked-out KB: open **Access**, set the **Staff domain**, and save. (A malformed domain, e.g. a pasted URL, is rejected with an error rather than silently clearing the field.)
 

@@ -69,12 +69,12 @@ Read access is controlled by four optional repo variables, enforced as Cloudflar
 | `EMAIL_DOMAIN` | Everyone at your organization's email domain (e.g. `acme.com`). This is what makes a KB "staff-only". |
 | `CLIENT_DOMAIN` | Everyone at one external client email domain, in addition to the staff domain |
 | `CLIENT_EMAILS` | Specific client email addresses, comma-separated, in addition to the staff domain |
-| `OFFICE_CIDRS` | Anyone on your office network: comma-separated network CIDRs that get a login-bypass policy, synced on every deploy |
+| `OFFICE_CIDRS` | Anyone on your office network: comma-separated IPv4 or IPv6 CIDRs (bare IPs work too) that get a login-bypass policy, synced on every deploy |
 
 !!! danger "Fail-closed: blank means locked, not staff-only"
     There is no default grant. A variable left blank grants no one through that channel, and a KB with none of them set deploys **locked to nobody** rather than public. To let your team in, set `EMAIL_DOMAIN`. To recover a locked-out KB, set the variables and redeploy.
 
-Unauthenticated visitors are redirected to a Cloudflare Access login before they can see anything. The publisher reconciles the Access policies on every deploy, so changing a variable and redeploying is how you change who can read the site.
+Unauthenticated visitors are redirected to a Cloudflare Access login before they can see anything. The publisher reconciles the Access policies on every deploy, so changing a variable and redeploying is how you change who can read the site. The sync is lockout-safe: every value is validated before any policy is touched, and the new policies are created before the old ones are deleted — a failed sync leaves the previous, working policies in place rather than removing them.
 
 ## What the publisher checks
 
@@ -110,8 +110,10 @@ With `public: true`, no Access app is created, and an existing Access app alread
 
 The verification pipeline inverts to match. The post-deploy check requires the site to answer an unauthenticated request with content (HTTP 200); a redirect means an Access gate is still up. On failure the run fails loudly but the deployment is **left in place**, with no rollback, because a still-gated site is the safe direction of failure for a public KB. And a token that lacks the Access scope only produces a warning in public mode rather than failing the run, though a leftover gate then can't be removed automatically.
 
+You don't have to edit `deploy.yml` by hand: the [admin wizard](admin.md)'s **🌐 Public KB** checkbox sets up a public KB directly, committing the public variant of the workflow. The admin's choice is authoritative over whatever the workflow already says — re-running setup *gated* over a public workflow converts it back (restoring the gate on that deploy), just as an explicit public opt-in converts a gated workflow. On a protected default branch the conversion is delivered as a pull request instead, and the deploy waits for the merge rather than publishing in the wrong access mode.
+
 !!! warning "Public is an explicit choice"
-    The default remains locked. Nothing you leave unset can make a KB public; only writing `public: true` into the workflow does, and that change is visible in the repo's history like any other. Use it only for documentation intended for the whole world.
+    The default remains locked. Nothing you leave unset can make a KB public; only writing `public: true` into the workflow — by hand or via the wizard's checkbox — does, and that change is visible in the repo's history like any other. Use it only for documentation intended for the whole world.
 
 ## Other workflow inputs
 
