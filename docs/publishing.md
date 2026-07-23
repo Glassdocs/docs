@@ -85,7 +85,7 @@ The publisher treats "the KB is live" and "the KB is gated" as the same event. I
 3. **Access app.** The publisher finds or creates the Cloudflare Access app for the site's domain. On a true first deploy the Pages project doesn't exist yet, so the app is created immediately after the first deploy instead.
 4. **Pre-flight.** Before deploying, the publisher probes the live domain. If the site answers publicly, the deploy is blocked.
 5. **Direct-upload check.** The Pages project is created (or verified) as a direct-upload project. A project wired to Git via Cloudflare's "Connect to Git" cannot accept these deploys; the publisher detects that and tells you to delete the project and redeploy rather than failing opaquely.
-6. **Deploy.** The built site is pushed to Cloudflare Pages by direct upload. Preview deployments are never created by this flow; only the production site exists.
+6. **Deploy.** The built site is pushed to Cloudflare Pages by direct upload. Preview deployments are never created by this flow — and the Access app covers `*.<name>.pages.dev` too, so even a manually created preview URL is gated like the production site.
 7. **Post-deploy verification.** The publisher probes the live site again. The only positive proof the gate is up is an unauthenticated request being redirected to the Access login. A 200 means the site is public; an unreachable site or an error is not proof either.
 8. **Rollback.** If the gate can't be positively confirmed, the deployment is deleted rather than left up. You cannot accidentally ship an ungated site.
 
