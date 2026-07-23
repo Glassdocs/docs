@@ -1,30 +1,39 @@
 name: Docs Deploy
 
-# Publishes the Glassdocs product documentation via the Glassdocs reusable
-# publisher. This KB is world-readable by explicit opt-in (`public: true`
-# below): no Cloudflare Access gate, and the post-deploy check verifies the
-# site actually serves content. Gated KBs use the same publisher with the
-# access variables instead — see docs/publishing.md.
-#
-# Required repo variable:  CF_PAGES_PROJECT   (glassdocs-docs → docs.glassdocs.site)
-# Org secrets inherited:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-
+# Publishes this KB via the Glassdocs secure reusable publisher. This KB is
+# WORLD-READABLE by explicit opt-in (`public: true` below): no Cloudflare
+# Access gate is created, and the post-deploy check verifies the site serves
+# content to anyone (HTTP 200). Set the repo variable CF_PAGES_PROJECT
+# (Glassdocs does this) to activate it.
 on:
   push:
     branches: [main]
+    # Only rebuild when the docs (or their config/deps/workflow) change — so this
+    # can live in an app repo / monorepo without redeploying on every code push.
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "requirements.txt"
+      - "docs/requirements.txt"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 jobs:
   deploy:
-    # Skip on the template repo itself — a KB is "live" once CF_PAGES_PROJECT is set.
     if: vars.CF_PAGES_PROJECT != ''
+    # Grant what the publisher needs — a reusable workflow can't request more
+    # than the caller, and many orgs default the token to read-only.
     permissions:
       contents: read
       deployments: write
     uses: Glassdocs/publisher/.github/workflows/deploy-pages.yml@v1
     with:
       project-name: ${{ vars.CF_PAGES_PROJECT }}
-      # This is the Glassdocs product documentation — world-readable by
-      # explicit opt-in. Access-grant variables are intentionally absent.
+      # World-readable by explicit opt-in — the access-grant inputs
+      # (email-domain / client-domain / client-emails) are intentionally absent.
       public: true
-    secrets: inherit
+    # Passed by name (NOT `secrets: inherit`): the publisher lives in another
+    # org, and inherit only forwards secrets within the same org/enterprise.
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
