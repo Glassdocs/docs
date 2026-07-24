@@ -1,0 +1,38 @@
+{
+  "anchorText": "Thanks to everyone who tested early versions, filed feedback, and helped shape what Glassdocs is today.",
+  "conversation": [
+    {
+      "author": "sergey-ivochkin-rocketlab",
+      "content": "add another page with credits for those who worked on it - RL dev team",
+      "role": "user",
+      "timestamp": 1784871083734
+    },
+    {
+      "content": "Add credits page for the Rocket Lab development team\n\nAdds a new credits.md page listing the Rocket Lab dev team and open-source foundations Glassdocs is built on.",
+      "role": "assistant",
+      "timestamp": 1784871083734
+    },
+    {
+      "role": "assistant",
+      "content": "Opened PR #5: https://github.com/Glassdocs/docs/pull/5",
+      "timestamp": 1784871110857
+    }
+  ],
+  "createdAt": 1784871083734,
+  "id": "954bb286-1534-4888-8c49-405c2ec4a03d",
+  "pageUrl": "https://docs.glassdocs.site/",
+  "proposalId": "0bfe509d-6fc5-4976-bf20-d8a268b13c2f",
+  "rationale": "Adds a new credits.md page listing the Rocket Lab dev team and open-source foundations Glassdocs is built on.",
+  "repo": "Glassdocs/docs",
+  "requestedBy": "sergey-ivochkin-rocketlab",
+  "selection": null,
+  "sourcePath": "docs/credits.md",
+  "status": "in_review",
+  "summary": "Add credits page for the Rocket Lab development team",
+  "title": "Add credits page for the Rocket Lab development team",
+  "updatedAt": 1784871110857,
+  "pr": {
+    "url": "https://github.com/Glassdocs/docs/pull/5",
+    "number": 5
+  }
+}
