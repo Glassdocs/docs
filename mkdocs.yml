@@ -82,4 +82,5 @@ nav:
   - Browser Extension: extension.md
   - Enterprise Deployment: enterprise.md
   - API Reference: api.md
-  - Security & Privacy: security.md
+  - "Security & Privacy": security.md
+  - Credits: credits.md
