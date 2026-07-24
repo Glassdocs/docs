@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "repo": "Glassdocs/docs",
+  "updatedAt": "2026-07-24T05:30:26.356Z",
+  "messageCount": 1,
+  "messages": [
+    {
+      "role": "user",
+      "content": "what is it about?",
+      "timestamp": 1784871024846
+    }
+  ]
+}
