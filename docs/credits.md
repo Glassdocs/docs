@@ -13,13 +13,11 @@ The people who designed, built, and ship Glassdocs:
 
 Glassdocs would not be possible without the following projects:
 
-| Project | Role |
-|---|---|
-| [MkDocs](https://www.mkdocs.org) | Static site generation |
-| [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) | Theme and component system |
-| [Cloudflare Pages](https://pages.cloudflare.com) | Edge hosting and CDN |
-| [Cloudflare Access](https://www.cloudflare.com/products/zero-trust/access/) | Zero-trust access control |
-| [GitHub Actions](https://github.com/features/actions) | CI/CD pipeline |
+- [MkDocs](https://www.mkdocs.org) — static site generation
+- [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) — theme and component system
+- [Cloudflare Pages](https://pages.cloudflare.com) — edge hosting and CDN
+- [Cloudflare Access](https://www.cloudflare.com/products/zero-trust/access/) — zero-trust access control
+- [GitHub Actions](https://github.com/features/actions) — CI/CD pipeline
 
 ## Acknowledgements
 
