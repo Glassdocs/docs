@@ -1,13 +1,18 @@
 {
   "version": 1,
   "repo": "Glassdocs/docs",
-  "updatedAt": "2026-07-24T05:30:26.356Z",
-  "messageCount": 1,
+  "updatedAt": "2026-07-24T05:30:35.755Z",
+  "messageCount": 2,
   "messages": [
     {
       "role": "user",
       "content": "what is it about?",
       "timestamp": 1784871024846
+    },
+    {
+      "role": "assistant",
+      "content": "Glassdocs is a tool that turns a Markdown GitHub repository into a **published, access-gated knowledge base** with an AI chat layer on top. Here are the core ideas:\n\n**Content stays in your accounts.** Your documents live in your GitHub repo, your site runs on your Cloudflare account, and Glassdocs never stores your document content. It only orchestrates the pipeline.\n\n**It was built for AI-assisted work.** The original use case is teams using AI agents to write code and documentation. The loop works like this:\n- Agents write docs explaining what was built and why.\n- Humans read, approve, and edit those docs.\n- Agents read the approved docs on the next prompt, treating them as a contract.\n\n**Three main pillars:**\n1. **Markdown knowledge bases** -- a GitHub repo with `docs/*.md` files and a `mkdocs.yml`, built by Zensical (the MkDocs successor).\n2. **Secure publishing** -- deploys to Cloudflare Pages behind Cloudflare Access, fail-closed by default (nothing is public unless explicitly set).\n3. **Docs chat and edit flow** -- a browser extension that lets readers ask questions about any page and propose edits that get committed back to the source repo.\n\n**Who it's for:** teams shipping with AI agents, consultancies managing per-client private knowledge bases, and any organization that wants docs-as-code without building the pipeline themselves.\n\nSource: [What is Glassdocs](https://docs.glassdocs.site/) (the full index page you're currently reading).",
+      "timestamp": 1784871034246
     }
   ]
 }
