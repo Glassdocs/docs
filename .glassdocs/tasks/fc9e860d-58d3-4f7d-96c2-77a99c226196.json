@@ -1,0 +1,39 @@
+{
+  "conversation": [
+    {
+      "author": "sergey-ivochkin-rocketlab",
+      "content": "turn it into a bullet point list instead of a table",
+      "role": "user",
+      "timestamp": 1784871392639
+    },
+    {
+      "content": "Convert open-source foundations table to bullet list",
+      "role": "assistant",
+      "timestamp": 1784871392639
+    },
+    {
+      "role": "assistant",
+      "content": "Opened PR #7: https://github.com/Glassdocs/docs/pull/7",
+      "timestamp": 1784871399927
+    }
+  ],
+  "createdAt": 1784871392639,
+  "id": "fc9e860d-58d3-4f7d-96c2-77a99c226196",
+  "pageUrl": "https://docs.glassdocs.site/credits/#built-on-great-open-source-foundations",
+  "proposalId": "cd89545f-81f1-4002-a9ae-8fdd88f0e187",
+  "repo": "Glassdocs/docs",
+  "requestedBy": "sergey-ivochkin-rocketlab",
+  "selection": {
+    "heading": "Built on great open-source foundations¶",
+    "text": "Project Role MkDocs Static site generation Material for MkDocs Theme and component system Cloudflare Pages Edge hosting and CDN Cloudflare Access Zero-trust access control GitHub Actions CI/CD pipeline"
+  },
+  "sourcePath": "docs/credits.md",
+  "status": "in_review",
+  "summary": "Convert open-source foundations table to bullet list",
+  "title": "Convert open-source foundations table to bullet list",
+  "updatedAt": 1784871399927,
+  "pr": {
+    "url": "https://github.com/Glassdocs/docs/pull/7",
+    "number": 7
+  }
+}
