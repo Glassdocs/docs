@@ -1,0 +1,35 @@
+name: llms.txt up to date
+
+# The deploy job hands the whole build to the reusable publisher, so there is
+# nowhere in it to inject a generation step. Instead of generating at publish
+# time, we generate at authoring time and CHECK here — a committed llms.txt
+# that silently drifts from docs/ is worse than none, because an answer engine
+# will quote the stale copy with full confidence.
+on:
+  pull_request:
+    paths: ["docs/**", "mkdocs.yml", "scripts/gen_llms_txt.py"]
+  push:
+    branches: [main]
+    paths: ["docs/**", "mkdocs.yml", "scripts/gen_llms_txt.py"]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Regenerate
+        run: python3 scripts/gen_llms_txt.py
+      - name: Fail if stale
+        run: |
+          if ! git diff --quiet -- docs/llms.txt docs/llms-full.txt; then
+            echo "::error::docs/llms.txt is out of date. Run: python3 scripts/gen_llms_txt.py"
+            git diff --stat -- docs/llms.txt docs/llms-full.txt
+            exit 1
+          fi
+          echo "llms.txt matches docs/"

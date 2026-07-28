@@ -125,3 +125,63 @@ The backend is the same software whether Glassdocs hosts it or you do. The two e
 - [Enterprise deployment](enterprise.md) — pointing every staff install at a hosted or self-hosted backend
 - [Admin](admin.md) — configuring an org shared key so members skip the free-tier caps
 - [Security](security.md) — the identity model and what is (and isn't) stored
+
+## Knowledge-base read endpoints
+
+Since the MCP server shipped, the admin **read** endpoints accept the same GitHub bearer token as everything above. They are how the [MCP server](mcp.md) works, and you can call them directly.
+
+You must be an **admin** of the organization — the same check the [dashboard](admin.md) applies.
+
+!!! warning "Reads only"
+    A bearer token authenticates `GET` requests. Anything that changes state — creating a KB, redeploying, changing access — still requires a signed-in dashboard session, and answers `403 Bearer-token auth is read-only` otherwise. This is deliberate: state changes should carry a reviewed, attributable identity rather than a long-lived token in a config file.
+
+### GET /api/admin/org/{org}/kbs
+
+Every KB registered for the organization.
+
+```bash
+curl -sS https://app.glassdocs.site/api/admin/org/your-org/kbs \
+  -H "Authorization: Bearer $(gh auth token)"
+```
+
+```json
+{
+  "org": "your-org",
+  "count": 2,
+  "kbs": [
+    {
+      "repo": "your-org/handbook",
+      "name": "handbook",
+      "cfProject": "your-org-handbook",
+      "siteUrl": "https://your-org-handbook.pages.dev",
+      "isArchived": false,
+      "lastStatus": "success"
+    }
+  ]
+}
+```
+
+### GET /api/admin/org/{org}/kbs/docs
+
+With `?repo=` — the Markdown pages in that KB. Add `&path=` to read one page.
+
+```bash
+# list
+curl -sS "https://app.glassdocs.site/api/admin/org/your-org/kbs/docs?repo=handbook" \
+  -H "Authorization: Bearer $(gh auth token)"
+
+# read one page
+curl -sS "https://app.glassdocs.site/api/admin/org/your-org/kbs/docs?repo=handbook&path=docs/index.md" \
+  -H "Authorization: Bearer $(gh auth token)"
+```
+
+Page content is read from your GitHub repo on each request and never stored by Glassdocs — the same passthrough guarantee as the rest of the control plane.
+
+### GET /api/admin/org/{org}/kbs/status
+
+Live deploy status for every KB, straight from GitHub Actions. The `lastStatus` in the list endpoint comes from a cached crawl and can lag; this doesn't.
+
+| Response | Meaning |
+| --- | --- |
+| `401` | Missing, expired or revoked GitHub token. |
+| `403` | Not an admin of this organization — or a non-`GET` attempted with a bearer token. |

@@ -1,0 +1,1473 @@
+# Glassdocs — full documentation
+
+
+---
+
+# What is Glassdocs
+
+<!-- https://docs.glassdocs.site/ -->
+
+# What is Glassdocs
+
+Glassdocs turns a Markdown GitHub repository into a published, access-gated knowledge base — and adds an AI chat layer that lets readers ask questions about any page and propose edits straight back to the source repo. Your content lives in **your** GitHub, your site runs on **your** Cloudflare, and Glassdocs orchestrates the rest without ever storing your documents.
+
+## The transparency layer for AI-authored work
+
+Glassdocs began as an answer to a modern problem: AI agents now write a lot of code, and the humans responsible for it need a way to read, approve, and steer that work. Glassdocs makes documentation the interface for that loop:
+
+1. **Agents write the docs** — every change lands with a Markdown page explaining what was built, why, and where.
+2. **You read and approve** — the docs are the diff you review. Edit what is wrong, accept what is right.
+3. **Agents read on the next prompt** — the approved docs become the contract. Work that contradicts them is flagged.
+
+The same machinery works just as well for human-authored docs: project knowledge bases, client-facing documentation, internal handbooks — anything you can express as Markdown in a repo.
+
+## Who it's for
+
+- **Teams shipping with AI agents** who want AI-written documentation they can actually review and trust.
+- **Consultancies and agencies** publishing per-client knowledge bases that must stay private — gated to staff and, selectively, to each client.
+- **Any organization** that wants docs-as-code (Markdown in Git, CI-published) without building and securing the pipeline themselves.
+
+## The three pillars
+
+### 1. Markdown knowledge bases
+
+A Glassdocs KB is deliberately simple: a GitHub repository containing
+
+- `docs/*.md` — your pages, and
+- `mkdocs.yml` — navigation and theme.
+
+That's it. The site is built by **Zensical**, the MkDocs successor from the Material for MkDocs team, which reads your `mkdocs.yml` unchanged. You start from a ready-made template repo and get a polished, searchable site out of the box. See [Authoring](authoring.md) for how to write pages.
+
+### 2. Secure publishing — in your accounts, not ours
+
+Glassdocs is a **zero-data control plane**. Publishing runs in **your own GitHub Actions**, with **your own Cloudflare credentials**, deploying to **your own Cloudflare Pages** project behind **Cloudflare Access**:
+
+- **Nothing is public by default.** Access is fail-closed: a KB with no access rules deploys locked to nobody, and every deploy verifies the gate is actually up — rolling itself back rather than leaving content exposed. The only way to publish openly is the publisher's explicit `public: true` input (this documentation site deploys that way), in which case the post-deploy check verifies the site is reachable instead. See [Publishing](publishing.md#public-mode).
+- **You keep custody.** Glassdocs never creates or deletes repos, never stores your Cloudflare token (it is sealed into your repo as an Actions secret), and never stores your document content, prompts, or AI responses.
+- **Revocation is yours.** Uninstall the Glassdocs GitHub App and the grant is gone.
+
+Details in [Publishing](publishing.md), [Hosting](hosting.md), and the [Security model](security.md).
+
+### 3. Docs chat and the edit flow
+
+The Glassdocs browser extension (Docs Chat) attaches an AI side panel to any published KB page. Readers can:
+
+- **Ask** — chat about the page they're reading, with the page as context.
+- **Edit** — describe a change in plain language; the AI drafts the edit, shows a preview, and on approval the change is committed back to the source repo via GitHub, so the site republishes through the normal pipeline.
+
+A site opts in with a single meta tag naming its source repository — no SDK, no embedded script. AI calls go through the managed backend at [app.glassdocs.site](https://app.glassdocs.site), which supports a free tier or your organization's own AI provider key, and meters token counts only. See the [Extension guide](extension.md) and [How it works](how-it-works.md).
+
+!!! note "Your docs never leave your accounts"
+    This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, an audit log, a small registry of which repos are set up as KBs, and the GitHub App installation record — never your documents. See [Security](security.md).
+
+## What Glassdocs is not
+
+- **Not a wiki or a hosted CMS.** There is no Glassdocs database of your pages — GitHub is the source of truth.
+- **Not a build service.** Your CI builds and deploys; Glassdocs configures and orchestrates it.
+- **Not open source.** Glassdocs is a commercial product by [Rocket Lab](https://www.rocketlab.com.au).
+
+## Where to go next
+
+- [Getting started](getting-started.md) — stand up your first KB end to end.
+- [How it works](how-it-works.md) — the architecture, for the technically curious.
+- [Admin console](admin.md) — managing KBs, access, and deploys at [app.glassdocs.site](https://app.glassdocs.site).
+- [Enterprise](enterprise.md) — org-wide rollout, BYO AI keys, and policy-managed extension install.
+- [API](api.md) — programmatic access to the control plane.
+
+
+---
+
+# Getting Started
+
+<!-- https://docs.glassdocs.site/getting-started/ -->
+
+# Getting started
+
+This is the end-to-end guide for a team adopting Glassdocs: create a knowledge base (KB) repo from the template, connect it in the admin console, deploy it to your own Cloudflare account behind an access gate, and pick up the browser extension for chat and edits. Glassdocs is a zero-data control plane — it orchestrates your setup, but your Markdown lives in your GitHub repo, your site is published to your Cloudflare Pages by your own GitHub Actions, and Glassdocs never creates or deletes repos and never stores your content.
+
+## Before you start
+
+You need two things:
+
+1. **A GitHub organization** — your KB repos live here, and this is where you install the Glassdocs GitHub App.
+2. **A Cloudflare account** — your published sites live here as Cloudflare Pages projects, gated by Cloudflare Access.
+
+!!! warning "Pick ONE Cloudflare account for all your KBs"
+    If you connect different KBs to different Cloudflare accounts, you'll eventually go looking for a site in one account and not find it because it deployed to another. Decide up front which account owns your KBs and stick to it. (See step 5 and [Troubleshooting](#troubleshooting).)
+
+## Step 1 — Install the Glassdocs GitHub App on your org
+
+Open the [Glassdocs admin](https://app.glassdocs.site), sign in with GitHub, and select your organization. If the app isn't installed yet, you'll be prompted to **Install the Glassdocs app on GitHub**.
+
+The app asks for **least-privilege** access — it can read and write repo contents (for scaffolding KB files and committing editor changes), Actions variables, workflows, secrets (sealing your Cloudflare token), and pull requests (for protected branches). It **never creates or deletes repos**, and never stores your content. On GitHub, pick your org, choose which repos to grant, and approve. Then come back to the admin and click **recheck**.
+
+The installation record is the only thing Glassdocs keeps. The grant is yours to revoke at any time by uninstalling the app.
+
+## Step 2 — Create a KB repo from the template
+
+Glassdocs configures repos; it doesn't create them. Create your KB repo yourself from the Glassdocs KB template:
+
+**<https://github.com/Glassdocs/kb-template/generate>**
+
+Create it **into your org**. A KB is just Markdown:
+
+- `docs/*.md` — your pages.
+- `mkdocs.yml` — navigation and theme.
+
+These are built into a site by **Zensical** (the MkDocs-successor engine). The template also ships the deploy workflow that publishes the site. See [Authoring](authoring.md) for writing conventions.
+
+!!! note
+    The repo must be one the Glassdocs app can access. If you granted the app only specific repos in step 1, either create the new repo under that grant or grant the app the new repo (there's a **Grant the app another repo** link in the admin).
+
+## Step 3 — Open the admin and select the repo
+
+Back in the [Glassdocs admin](https://app.glassdocs.site), with your org selected, find the **Knowledge bases** card and click **＋ Set up a KB**.
+
+- **Repo** — pick the repo you just created. Only repos the app can access appear here; if yours is missing, click **Reload** (or grant the app the repo first).
+- **Cloudflare Pages project** — choose a project name. This becomes your site URL: `<name>.pages.dev`. The admin suggests one from the repo name; you can change it. **If this KB already has a live Cloudflare Pages site, enter that project's exact name** — a new name creates a *second, separate* site and orphans the real one. After you connect Cloudflare (step 4), the admin lists the account's existing projects and warns if the name you chose isn't one of them.
+
+## Step 4 — Connect Cloudflare
+
+In the setup form, use the **Connect Cloudflare** section:
+
+1. Click **Create token on Cloudflare**. The link pre-selects **exactly** the two permissions Glassdocs needs — **Cloudflare Pages: Edit** and **Access: Apps and Policies: Edit** — so you don't have to pick any permissions yourself. Before clicking Create, confirm both permission rows show **Edit** — a read-only token connects but can't deploy. Create the token.
+2. Paste the token into the field and press **Connect** (for the selected repo).
+
+Glassdocs verifies the token and **seals it into the repo as an Actions secret**. The token is **never stored by Glassdocs** — from here on, only your own GitHub Actions use it.
+
+Two things to get right:
+
+- **Use the ONE Cloudflare account you chose up front.** If your token can access multiple accounts, the admin will ask which one to deploy to — pick the same account you use for your other KBs. Mixing accounts is the most common cause of "I can't find my site."
+- **Do NOT use Cloudflare's "Connect to Git".** Glassdocs publishes by **direct upload** from GitHub Actions. A Pages project wired to Git won't accept these deploys.
+
+## Step 5 — Set who can read the site
+
+Still in the setup form (and all editable later per KB):
+
+- **Staff domain** *(recommended)* — your own organization's email domain (e.g. `yourcompany.com`). Grants your whole team SSO read access. This is what makes a KB "staff-only".
+- **Client domain** *(optional)* — grants read access to everyone at an external email domain (e.g. `client.com`).
+- **Client emails** *(optional)* — a comma-separated list of individual addresses.
+
+Access is **fail-closed**, and there is **no default** — an access field left blank grants no one through that channel. In particular, leaving **every** field blank deploys the site **locked to nobody** (not "staff-only"). To let your team in, set the **Staff domain**. Nothing is ever public by default — though for docs genuinely meant for the whole world, the form's **🌐 Public KB** checkbox is the explicit opt-in for a world-readable, ungated site (see [public mode](publishing.md#public-mode)).
+
+You can change access on an existing KB anytime via **Access** on the KB — the panel loads the KB's current live values, and saving redeploys so the new policy takes effect. That's also how you recover a locked-out KB: open **Access**, set the **Staff domain**, and save. (A malformed domain, e.g. a pasted URL, is rejected with an error rather than silently clearing the field.)
+
+## Step 6 — Set up & deploy
+
+Click **Set up & deploy**. Glassdocs configures the existing repo (writing the Pages-project and access variables) and dispatches the first deploy. Two variations: if Cloudflare isn't connected yet, the dispatch is skipped with a warning until you connect; and if the default branch is protected, Glassdocs opens a setup PR instead — merging it triggers the first deploy (the KB row shows "setup PR #N — merge to publish"). From here everything runs in **your** GitHub Actions:
+
+- The workflow **builds your Markdown KB with Zensical** into a site.
+- It **deploys that site to your Cloudflare Pages** project.
+- It **creates and reconciles a Cloudflare Access policy** so the site is gated — and it does this **fail-closed** (if the Access app can't be created, it aborts *before* publishing any content).
+
+If your repo was created from the template it already has everything it needs. (For a repo that started empty, leave **Add Glassdocs KB files** checked so the setup commits the deploy workflow, `mkdocs.yml`, and `docs/`.)
+
+Watch the deploy status live in the KB list in the admin — it shows the real GitHub Actions run status (queued / running / deployed / failed) and links to the run logs. More on the pipeline in [Publishing](publishing.md).
+
+## Step 7 — Verify the site is gated
+
+Once the deploy reports **deployed**, confirm the gate is actually up: open your `<name>.pages.dev` URL **signed out** (or in a private window). You should be **redirected to the Cloudflare Access login**, not shown the KB. If you see content without signing in, the site is not gated — stop and check the deploy.
+
+You can also check from a terminal — a gated site answers with a redirect, never a 200:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" https://<name>.pages.dev
+```
+
+For the full security model behind the gate, see [Security](security.md).
+
+## Step 8 — Install the browser extension
+
+With the site live, install the **Glassdocs browser extension (Docs Chat)** to chat about pages and make edits without leaving the site. The extension recognizes any published page that declares its source repo via a meta tag (see [How it works](how-it-works.md#how-a-site-opts-in-the-source-repo-meta-tag)) and adds a side panel where you can:
+
+- **Ask** questions about the page you're reading.
+- **Edit** the page in plain language — the change is committed back to your repo via GitHub, and the site republishes automatically.
+
+See the [Extension guide](extension.md) for installation and sign-in, and [Enterprise](enterprise.md) for rolling the extension out org-wide by policy.
+
+## Troubleshooting
+
+**Where's my deploy status?**
+The KB list in the admin shows each KB's live deploy status (queued, running, deployed, failed) pulled straight from GitHub Actions, with a link to the run. A failed run also names the step that broke, so you can jump to the logs. Use **Redeploy** on a KB to trigger a fresh deploy.
+
+**My site URL has a random suffix.**
+`pages.dev` subdomains are **globally unique across all of Cloudflare**. If the project name you chose is already taken, Cloudflare hands you a suffixed URL (e.g. `myname-a1b2.pages.dev`). That's fine — the suffixed URL still works and is still gated. Just use whatever URL the deploy/Cloudflare reports.
+
+**I deleted a Pages project and now can't recreate it under the same name.**
+Cloudflare enforces a **name-reuse cooldown** after a Pages project is deleted. Wait it out, then redeploy — the name will free up. (Or pick a different project name to avoid the wait.)
+
+**I can't find my site / "it deployed but it's not there."**
+Almost always this is a **wrong Cloudflare account**. Check that the KB is connected to the account you intended — when a token spans multiple accounts, the account you picked at Connect time is where the site lives. Reconnect Cloudflare (step 4) with the correct account if needed. This is why picking **one** Cloudflare account for all your KBs up front saves grief.
+
+**The deploy fails at the Access step.**
+The publisher is deliberately **fail-closed**: if it can't create or verify the Cloudflare Access policy, it aborts before publishing rather than risk exposing your content. Check that the connected token still has **Access: Apps and Policies: Edit** (and **Cloudflare Pages: Edit**), then redeploy.
+
+## How this maps to the security model
+
+For the full design — the zero-data control plane, the per-customer GitHub App installation, the token sealed into your repo, and the fail-closed publish invariants — see [How it works](how-it-works.md) and [Security](security.md).
+
+
+---
+
+# How It Works
+
+<!-- https://docs.glassdocs.site/how-it-works/ -->
+
+# How it works
+
+Glassdocs is a **zero-data control plane**: it orchestrates repos, deploys, access, and AI — but your content, your published sites, and your compute all stay in your own GitHub and Cloudflare accounts. This page walks through the components, how they connect, and the design decisions that keep your documents out of Glassdocs' hands.
+
+## The components
+
+| Component | Where it runs | What it does |
+|---|---|---|
+| **KB repo** | Your GitHub org | The source of truth: `docs/*.md` pages and `mkdocs.yml` (nav + theme). Created by you from the [kb-template](https://github.com/Glassdocs/kb-template/generate). |
+| **Publisher workflow** | Your GitHub Actions | The template ships a thin caller workflow; the reusable publisher it invokes lives in the tag-pinned [`Glassdocs/publisher`](https://github.com/Glassdocs/publisher) repo (`@v1`). Builds the KB with **Zensical** and deploys to Cloudflare Pages, with fail-closed access gating. |
+| **Cloudflare Pages + Access** | Your Cloudflare account | Hosts the built site at `<project>.pages.dev`; Cloudflare Access gates every request behind an email-based policy. |
+| **Managed backend** | [app.glassdocs.site](https://app.glassdocs.site) | The control plane: admin console, GitHub App integration, AI proxy, usage metering, audit log. Holds identity and tokens — never content. |
+| **Browser extension** | The reader's browser | Docs Chat: an AI side panel on published pages for asking questions and proposing edits back to the source repo. |
+
+## Control plane vs data plane
+
+The central design decision is what Glassdocs does **not** do: host customer data.
+
+| State | Lives in |
+|---|---|
+| KB content (`docs/*.md`), nav + theme (`mkdocs.yml`), branding assets | **Your GitHub repo** — Glassdocs never copies it; page bodies only *transit* the control plane during edits, never land in it |
+| Published site | **Your Cloudflare Pages** — deployed by your own CI |
+| Access policy (who can read the site) | **Your repo's Actions variables → Cloudflare Access** — reconciled by the deploy workflow |
+| GitHub App installation | **Your GitHub org** — revocation = uninstall |
+| Identity (tenant, seats), encrypted org AI key | Glassdocs database |
+| Usage/budget counters (token **counts** only) | Glassdocs database |
+| KB inventory index + audit log | Glassdocs database — the inventory is regenerable from GitHub; the audit log is the one genuinely control-plane-owned record |
+
+**Glassdocs never stores document content, prompts, or model responses.**
+
+## How the pieces connect
+
+```mermaid
+flowchart LR
+  subgraph GH["Your GitHub"]
+    R["KB repo · docs/*.md + mkdocs.yml"]
+    CI["GitHub Actions · publisher workflow"]
+  end
+  subgraph CF["Your Cloudflare"]
+    P["Cloudflare Pages · built site"]
+    A["Cloudflare Access · email gate"]
+  end
+  subgraph GD["Glassdocs control plane"]
+    S["app.glassdocs.site · admin, AI proxy, audit"]
+  end
+  E["Browser extension · Docs Chat"]
+
+  R -->|push triggers| CI
+  CI -->|Zensical build + direct upload| P
+  CI -->|create / reconcile policy| A
+  A -->|gates requests to| P
+  S -->|GitHub App · set variables, dispatch deploys| R
+  E -->|commits edits via GitHub API| R
+  E -->|AI chat requests| S
+  Reader(("Reader")) --> A
+  Reader --> E
+```
+
+## Publishing: your CI, fail-closed
+
+When you push to the KB repo (or trigger a redeploy from the admin), the publisher workflow runs **in your GitHub Actions with your Cloudflare credentials**. It builds the Markdown with Zensical into a static site and deploys it by direct upload to your Cloudflare Pages project. Five invariants are enforced on every deploy:
+
+1. **Fail-closed on first deploy** — if the Cloudflare Access app can't be created, the workflow aborts *before* publishing any content.
+2. **Pre-flight block** — if the domain is already publicly reachable (HTTP 2xx), the deploy fails: the gate isn't active.
+3. **Post-deploy verify-or-rollback** — after deploying, the workflow probes the site again; if it's public, the latest deployment is deleted and the run fails. It never reports success on a gate it couldn't prove was up.
+4. **Reconcile by replace** — every deploy deletes the existing Access policies on the app and recreates them from the repo variables, so the live policy always matches the declared inputs; a manual dashboard edit doesn't linger — it's overwritten on the next deploy.
+5. **No preview deployments** — the direct-upload flow never creates per-branch preview URLs, though no Pages setting currently disables them outright (tracked in [Glassdocs/publisher#3](https://github.com/Glassdocs/publisher/issues/3)).
+
+!!! tip "A broken deploy is better than a public deploy"
+    These invariants are the difference between "private KB" and "a client's confidential docs exposed publicly". They are non-negotiable and verified independently on every run. See [Publishing](publishing.md) and [Security](security.md).
+
+The one exception is explicit: a KB can opt in to being fully public with the publisher's `public: true` input. In that mode no Access app is created (an existing gate on the domain is removed), and the post-deploy check inverts — it requires the site to answer HTTP 200. The default remains locked; this documentation site is published this way. See [Publishing](publishing.md#public-mode).
+
+## Access: policy lives in your repo, not in Glassdocs
+
+Who can read a site is expressed as **GitHub Actions variables on your repo** — a staff SSO domain, optional client domain, and optional individual client emails, plus the Pages project name. The deploy workflow reads these and reconciles the Cloudflare Access policy to match.
+
+There is **no default**: a variable left unset grants no one through that channel, so a KB with no access set deploys locked to nobody. The admin console edits these variables through the GitHub App and triggers a redeploy — Glassdocs holds no separate access list that could drift or leak. An explicit revoke (clearing a field) is distinguished from a typo: a malformed value is rejected up front rather than silently clearing access.
+
+When a reader visits the site, Cloudflare's edge checks for a valid Access session before any content is served. Without one, the reader is redirected to the Cloudflare Access login and must authenticate with an email the policy allows; a signed session cookie then lets requests through for the session's duration. See [Hosting](hosting.md).
+
+## Identity: one GitHub App, two token modes
+
+A single Glassdocs GitHub App covers both directions of trust:
+
+- **User-to-server (device flow)** — the extension signs each user in with their own GitHub identity. Tokens live in the browser's extension storage, never server-side; refresh, expiry, and revocation are handled transparently. Edits are committed as the actual person, not a shared bot.
+- **Installation tokens** — for control-plane actions on your repos (setting variables, dispatching deploys, the in-console editor). The backend mints a short-lived (1-hour) installation token scoped to your org, and every admin route verifies the caller is an admin of that org **before** minting one.
+
+You install the App on your org and select repos. The permission footprint is deliberately small — contents write (scaffolding and editor commits), Actions variables, workflows, secrets, and pull requests; no repo-creation or administration scope. Glassdocs stores only the installation record; uninstalling the App revokes everything. See [Admin](admin.md).
+
+## Editing: two paths, both passthrough
+
+There are two ways to edit a KB, and both preserve the zero-data invariant because content only transits, never persists:
+
+- **The browser extension** (chat-to-edit, the power surface) — commits straight to your repo with the signed-in user's own GitHub token.
+- **The in-console editor** — a browser-only path in the admin so someone can edit without installing anything. It reads and writes `docs/*.md` through a thin server proxy using a short-lived, org-scoped installation token. The page body is read from and committed back to your default branch (which republishes on push); the server persists nothing — the audit record holds the file path and byte count only, never content. Unsaved edits live in the browser, never in a server-side draft store.
+
+Both paths share the same AI core. Key resolution is identical: your org's **BYO key** if configured (your model, you pay), otherwise the **free tier** (Glassdocs' key, fair-use caps). Only token *counts* are metered; the prompt and completion are never stored. AI output is previewed and only enters the page on an explicit apply — and only reaches GitHub when a human saves. See [Enterprise](enterprise.md) for BYO keys and the [API](api.md) for the programmatic surface.
+
+## How a site opts in: the `source-repo` meta tag
+
+The extension needs to know which repo a published page came from. A site opts in by emitting a single meta tag in every published page's rendered HTML:
+
+```html
+<meta name="source-repo" content="owner/repo">
+```
+
+(`docs-repo` is still accepted as a legacy alias.) The tag must be present in every page's head for the extension to recognize the site. Repo detection is **only** via this tag — setting the GitHub repo's website/homepage field does nothing.
+
+This is the whole integration surface: no SDK, no embedded script, no tracking pixel. A site that doesn't emit the tag is invisible to the extension; a site that does gets chat and edit for any signed-in reader with repo access. See the [Extension guide](extension.md).
+
+## Trust boundaries in one paragraph
+
+Tenant isolation is delegated to boundaries that are already battle-tested: GitHub App installation scope on the GitHub side, and account boundaries on the Cloudflare side — not a hand-rolled ACL. Tokens are short-lived where possible; anything persisted (like a BYO AI key) is encrypted at rest, with plaintext never logged. Every mutating control-plane action lands in an append-only audit log. The full threat model is covered in [Security](security.md).
+
+
+---
+
+# Writing a KB
+
+<!-- https://docs.glassdocs.site/authoring/ -->
+
+# Writing a knowledge base
+
+A Glassdocs knowledge base is Markdown, full stop: pages in `docs/*.md` plus one `mkdocs.yml` at the repo root. You write plain Markdown files, push to `main`, and the publisher builds them with Zensical (the MkDocs successor from the Material team) and deploys the result. This page covers the Markdown-only rule, the template repo structure, the Markdown features you can use, navigation, and how to write pages that read well.
+
+## The Markdown-only rule
+
+Everything a reader sees comes from Markdown. No custom HTML pages, no forked themes, no build scripts. The one stylesheet in your repo is the template's own `docs/stylesheets/extra.css`, which carries brand tokens; you don't add others.
+
+Why this is a hard rule and not a style preference:
+
+- **Your content stays portable.** A folder of Markdown files diffs cleanly, reviews cleanly in pull requests, and would still be readable if you walked away from Glassdocs tomorrow.
+- **Publishing is centralized.** Build tooling, security headers, and content checks are maintained in the [publisher](how-it-works.md) and run at deploy time. Your repo never accumulates publishing machinery that drifts out of date.
+- **The pipeline enforces the shape.** The publisher runs a compliance lint on every deploy before anything else happens: `mkdocs.yml` must exist, tracked HTML under `docs/` fails the build, and commercial filenames are blocked. The rest of the rule (no forked themes, no build scripts) is convention rather than enforcement, but it is what keeps the guarantees above true.
+- **Pages map back to source.** At deploy time the publisher injects metadata linking each published page to its Markdown file, which is what lets the [browser extension](extension.md) recognize your site and edit the right file.
+
+The only non-content file your repo carries is `.github/workflows/deploy.yml`, which has to live in its standard location to trigger CI. See [Publishing](publishing.md) for what it does.
+
+!!! warning "No commercial content in project KBs"
+    Statements of work, rate cards, pricing, quotes, invoices, and contracts do not belong in a project knowledge base. Project KBs are for technical documentation, architecture, and project knowledge. The compliance lint blocks filenames matching `sow`, `rate-card`, `pricing`, `quote`, `invoice`, or `contract` (as `.md`, `.pdf`, or `.docx` under `docs/`) unless the deploy explicitly opts in with `allow-financial: true`, which is intended only for dedicated pre-sales KBs. Effort-only artefacts like `proposal.md`, `estimate.md`, and `plan.md` are deliberately exempt: work breakdowns and dev-day estimates are project planning, not commerce.
+
+## Template structure
+
+New KBs start from the template repo at [github.com/Glassdocs/kb-template](https://github.com/Glassdocs/kb-template). A fresh instance looks like this:
+
+| Path | What it is |
+| --- | --- |
+| `docs/index.md` | Your home page |
+| `docs/getting-started.md` | A starter page to replace or extend |
+| `docs/assets/` | Logo, favicon, and the Mermaid init script |
+| `docs/stylesheets/extra.css` | Theme accent styling, referenced from `mkdocs.yml` |
+| `mkdocs.yml` | Site config: name, theme, Markdown features, navigation |
+| `.github/workflows/deploy.yml` | Calls the reusable publisher on push to `main` |
+| `requirements.txt` | Pins the Zensical build (optional; the publisher installs Zensical if absent) |
+
+To start, customize two things in `mkdocs.yml`: `site_name` and `nav`. The rest of the config works as shipped, and Zensical reads it unchanged.
+
+## Supported Markdown features
+
+The template's `mkdocs.yml` enables a full set of Markdown extensions. Beyond standard Markdown you get tables, footnotes, definition lists, abbreviations, attribute lists, and permalinked headings, plus the features below.
+
+### Admonitions
+
+Call out notes, tips, and warnings:
+
+```markdown
+!!! note "Optional title"
+    Body of the admonition, indented four spaces.
+
+!!! warning
+    Uses the type name as the title when none is given.
+```
+
+The `pymdownx.details` extension also gives you collapsible blocks. Start with `???` instead of `!!!` and the block renders collapsed:
+
+```markdown
+??? info "Click to expand"
+    Hidden until the reader opens it.
+```
+
+### Mermaid diagrams
+
+Fence a diagram with the `mermaid` language and it renders as a diagram, not a code block:
+
+````markdown
+```mermaid
+graph LR
+  A[Markdown] --> B[Zensical build]
+  B --> C[Cloudflare Pages]
+```
+````
+
+### Content tabs
+
+Group alternatives (per-OS instructions, per-language examples) into tabs:
+
+```markdown
+=== "macOS"
+    Instructions for macOS.
+
+=== "Windows"
+    Instructions for Windows.
+```
+
+### Task lists
+
+Checklists render with real checkboxes:
+
+```markdown
+- [x] Repo created from the template
+- [x] First page written
+- [ ] Deployed
+```
+
+### Code blocks
+
+Fenced code blocks get syntax highlighting, and every block has a copy button. Inline highlighting works too, so `` `#!python range(10)` `` renders highlighted inline code. Use inline code for file names, commands, and variables.
+
+## Navigation
+
+The sidebar is defined by `nav` in `mkdocs.yml`:
+
+```yaml
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+```
+
+When you add a page, add it to `nav` in the same commit. Keep labels short (one or two words) and order pages the way a new reader should meet them. The per-page table of contents is generated automatically from your headings, so within a page, headings are your navigation: one `#` title per page, `##` for sections, `###` for subsections, and never skip a level.
+
+## Writing well
+
+### What every KB should cover
+
+| Section | Purpose | Required |
+| --- | --- | --- |
+| About / Overview | What the project is and who it's for | Yes |
+| Getting Started | Setup, prerequisites, first run | Yes |
+| Tech Stack | Technologies used, in a table | Yes |
+| Architecture | System design, key decisions | Recommended |
+| API / Data Model | Endpoints, schemas, data flow | If applicable |
+| Deployment | How and where it deploys | Recommended |
+
+Add project-specific sections as needed.
+
+### Voice and tone
+
+- **Clear over clever.** Write for scanning, not studying.
+- **Direct.** Lead with what matters and skip filler.
+- **Friendly but professional.** Approachable, not casual.
+- **Confident.** State things plainly. Avoid hedging with "maybe", "probably", "it should".
+- Prefer a list to a long paragraph, use descriptive link text (never "click here"), and keep list items parallel in structure.
+
+### Don't publish text that reads machine-made
+
+AI tools are a normal part of the workflow. Publishing text that reads like raw model output is the problem. The rules:
+
+1. **Avoid em dashes in running text.** Almost every one can become a full stop, colon, semicolon, comma, or parentheses. One on a page is fine; five is a pattern.
+2. **En dashes only in ranges**, like 2024–2026 or 10–15 hours. Never as sentence punctuation.
+3. **Vary sentence rhythm.** If every paragraph follows the same shape ("X is not Y. It is Z."), rewrite some.
+4. **Use real, specific examples** from the product instead of plausible generic ones.
+5. **Use descriptive headings** specific to the content. "How BLE discovery works" beats "Technical Overview". When every page is organized into "Key Takeaways" and "Why This Matters", it feels templated.
+6. **Don't over-polish.** A doc that reads like a real person wrote it in a real afternoon is more trustworthy than one sanded to a uniform finish.
+
+Before publishing a page, read it and ask: could a reader tell it was AI-assisted just from the style? Do more than two em dashes appear? Does every paragraph follow the same structure? Would it sound natural read aloud to a colleague? If any answer is wrong, edit it down.
+
+## Next steps
+
+- [Publish the KB](publishing.md) once you have pages worth reading.
+- [Install the extension](extension.md) to edit pages directly from the published site.
+- New here? Start with [Getting Started](getting-started.md).
+
+
+---
+
+# Publishing
+
+<!-- https://docs.glassdocs.site/publishing/ -->
+
+# Publishing (client-hosted)
+
+Client-hosted publishing means your KB deploys to your own Cloudflare account from your own GitHub Actions. The repo carries one small workflow that calls the reusable Glassdocs publisher, which builds your Markdown with Zensical and publishes it to Cloudflare Pages, secure by default behind Cloudflare Access. This page covers the workflow, the variables and secrets it needs, the access model, the security checks, and the opt-in public mode.
+
+## The deploy workflow
+
+Every KB created from the template carries `.github/workflows/deploy.yml`:
+
+```yaml
+on:
+  push:
+    branches: [main]
+    # Only rebuild when the docs (or their config/deps/workflow) change
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "requirements.txt"
+      - "docs/requirements.txt"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: vars.CF_PAGES_PROJECT != ''
+    permissions:
+      contents: read
+      deployments: write
+    uses: Glassdocs/publisher/.github/workflows/deploy-pages.yml@v1
+    with:
+      project-name: ${{ vars.CF_PAGES_PROJECT }}
+      email-domain: ${{ vars.EMAIL_DOMAIN }}
+      client-domain: ${{ vars.CLIENT_DOMAIN }}
+      client-emails: ${{ vars.CLIENT_EMAILS }}
+    # Passed by name, not `secrets: inherit` — inherit only forwards secrets
+    # within the same org/enterprise, and the publisher lives in another org.
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+```
+
+It runs on pushes to `main` that touch the docs, their config, or the workflow itself (and on manual dispatch), so it can live in an app repo or monorepo without redeploying on every code push. It is a no-op until the `CF_PAGES_PROJECT` variable is set, which is what makes a KB "live". The publisher is pinned by release tag (`@v1`): it runs across every consumer repo, so it is a release-gated artifact.
+
+!!! tip "The admin dashboard does this for you"
+    Setting the variable and sealing the secrets by hand is the manual path. The [admin dashboard](admin.md) configures the repo and connects Cloudflare with one paste. The result is identical: everything below still applies.
+
+## Configuration
+
+### Required repo variable
+
+| Variable | Purpose |
+| --- | --- |
+| `CF_PAGES_PROJECT` | Cloudflare Pages project name. Becomes `<name>.pages.dev`. Lowercase letters, digits, and hyphens only; the publisher rejects anything else. |
+
+### Required repo secrets
+
+| Secret | Purpose |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | API token scoped to exactly two permission groups: **Pages: Edit** and **Access: Apps and Policies: Edit** |
+| `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account that owns the Pages project |
+
+Set both as Actions secrets on the KB repo (or its org); the workflow passes them to the publisher by name, as in the example above. (`secrets: inherit` only forwards secrets within the same org or enterprise, so a KB repo in your own org calling the cross-org publisher must map the two secrets explicitly. The Glassdocs admin scaffolds, and heals, exactly this form.) The publisher verifies the credentials up front, and it confirms the token can actually reach Access on that account before doing anything, so a mis-scoped token fails fast with a clear message instead of a cryptic API error later.
+
+## Who can read the site
+
+Read access is controlled by four optional repo variables, enforced as Cloudflare Access policies:
+
+| Variable | Grants access to |
+| --- | --- |
+| `EMAIL_DOMAIN` | Everyone at your organization's email domain (e.g. `acme.com`). This is what makes a KB "staff-only". |
+| `CLIENT_DOMAIN` | Everyone at one external client email domain, in addition to the staff domain |
+| `CLIENT_EMAILS` | Specific client email addresses, comma-separated, in addition to the staff domain |
+| `OFFICE_CIDRS` | Anyone on your office network: comma-separated IPv4 or IPv6 CIDRs (bare IPs work too) that get a login-bypass policy, synced on every deploy |
+
+!!! danger "Fail-closed: blank means locked, not staff-only"
+    There is no default grant. A variable left blank grants no one through that channel, and a KB with none of them set deploys **locked to nobody** rather than public. To let your team in, set `EMAIL_DOMAIN`. To recover a locked-out KB, set the variables and redeploy.
+
+Unauthenticated visitors are redirected to a Cloudflare Access login before they can see anything. The publisher reconciles the Access policies on every deploy, so changing a variable and redeploying is how you change who can read the site. The sync is lockout-safe: every value is validated before any policy is touched, and the new policies are created before the old ones are deleted — a failed sync leaves the previous, working policies in place rather than removing them.
+
+## What the publisher checks
+
+The publisher treats "the KB is live" and "the KB is gated" as the same event. In order:
+
+1. **Project name validation.** A malformed project name fails the run before it reaches any API call.
+2. **Compliance lint.** The Markdown source is linted before any side effects: `mkdocs.yml` must exist, no custom HTML may be tracked under `docs/`, and commercial filenames are blocked unless the deploy sets `allow-financial: true`. Those violations block the deploy; a missing deploy workflow only produces a warning.
+3. **Access app.** The publisher finds or creates the Cloudflare Access app for the site's domain. On a true first deploy the Pages project doesn't exist yet, so the app is created immediately after the first deploy instead.
+4. **Pre-flight.** Before deploying, the publisher probes the live domain. If the site answers publicly, the deploy is blocked.
+5. **Direct-upload check.** The Pages project is created (or verified) as a direct-upload project. A project wired to Git via Cloudflare's "Connect to Git" cannot accept these deploys; the publisher detects that and tells you to delete the project and redeploy rather than failing opaquely.
+6. **Deploy.** The built site is pushed to Cloudflare Pages by direct upload. Preview deployments are never created by this flow — and the Access app covers `*.<name>.pages.dev` too, so even a manually created preview URL is gated like the production site.
+7. **Post-deploy verification.** The publisher probes the live site again. The only positive proof the gate is up is an unauthenticated request being redirected to the Access login. A 200 means the site is public; an unreachable site or an error is not proof either.
+8. **Rollback.** If the gate can't be positively confirmed, the deployment is deleted rather than left up. You cannot accidentally ship an ungated site.
+
+!!! note "pages.dev names are globally unique"
+    A `<name>.pages.dev` subdomain is unique across all of Cloudflare, not just your account. If your chosen name is taken elsewhere, Cloudflare assigns a suffixed subdomain instead. The publisher detects the real subdomain and gates that, so the KB still works and is still protected; only the exact hostname differs.
+
+## Public mode
+
+Some KBs are meant for everyone: public product documentation, this site included. For those, the publisher supports an opt-in public mode:
+
+```yaml
+    uses: Glassdocs/publisher/.github/workflows/deploy-pages.yml@v1
+    with:
+      project-name: ${{ vars.CF_PAGES_PROJECT }}
+      public: true
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+```
+
+With `public: true`, no Access app is created, and an existing Access app already gating the domain is **removed**: public is the declared intent. If you flip a private KB to public, its gate comes down on the next deploy, so be sure that is what you mean. The access variables are irrelevant in this mode.
+
+The verification pipeline inverts to match. The post-deploy check requires the site to answer an unauthenticated request with content (HTTP 200); a redirect means an Access gate is still up. On failure the run fails loudly but the deployment is **left in place**, with no rollback, because a still-gated site is the safe direction of failure for a public KB. And a token that lacks the Access scope only produces a warning in public mode rather than failing the run, though a leftover gate then can't be removed automatically.
+
+You don't have to edit `deploy.yml` by hand: the [admin wizard](admin.md)'s **🌐 Public KB** checkbox sets up a public KB directly, committing the public variant of the workflow. The admin's choice is authoritative over whatever the workflow already says — re-running setup *gated* over a public workflow converts it back (restoring the gate on that deploy), just as an explicit public opt-in converts a gated workflow. On a protected default branch the conversion is delivered as a pull request instead, and the deploy waits for the merge rather than publishing in the wrong access mode.
+
+!!! warning "Public is an explicit choice"
+    The default remains locked. Nothing you leave unset can make a KB public; only writing `public: true` into the workflow — by hand or via the wizard's checkbox — does, and that change is visible in the repo's history like any other. Use it only for documentation intended for the whole world.
+
+## Other workflow inputs
+
+| Input | Default | Purpose |
+| --- | --- | --- |
+| `allowed-emails` | empty | Comma-separated emails to allow. With no `email-domain`, only these emails get access. |
+| `allow-financial` | `false` | Permit financial/contractual content (dedicated pre-sales KBs only) |
+| `skip-lint` | `false` | Skip the compliance lint (not recommended) |
+| `python-version` | `3.12` | Python version used for the build |
+| `wrangler-version` | latest | Pin a specific Wrangler version |
+
+A KB may also pin Zensical or add build plugins via its own `requirements.txt`; when it ships none, the publisher installs Zensical directly.
+
+## See also
+
+- [Managed hosting](hosting.md) if you'd rather not run Cloudflare yourself
+- [Admin dashboard](admin.md) for the guided setup flow
+- [Security](security.md) for the full security model
+- [Writing a KB](authoring.md) for what goes in the pages themselves
+
+
+---
+
+# Managed Hosting
+
+<!-- https://docs.glassdocs.site/hosting/ -->
+
+# Managed hosting
+
+Managed hosting means Glassdocs builds and serves your KB on Cloudflare infrastructure it operates, so you never touch a Cloudflare account: you keep writing Markdown in your GitHub repo, and Glassdocs handles the rest. This page explains what hosting looks like today, honestly: the fully supported path is client-hosted on your own Cloudflare (with a guided dashboard that makes it a five-minute job), while the fully managed offering is built on publisher machinery that ships today but is not yet a self-serve product.
+
+## Two hosting models
+
+| | Client-hosted (available now) | Managed (in development) |
+| --- | --- | --- |
+| Content lives in | Your GitHub | Your GitHub |
+| Build runs in | Your GitHub Actions | Glassdocs-operated CI |
+| Site served from | Your Cloudflare account | Glassdocs-operated Cloudflare |
+| Cloudflare account needed | Yes (free tier is fine) | No |
+| Setup | [deploy.yml + variables](publishing.md), or the guided dashboard below | Planned as a managed onboarding |
+
+In both models the source of truth is the same: a Markdown repo created from the KB template. Moving between models is a deployment change, not a content migration.
+
+## What's available today: your Cloudflare, guided setup
+
+The live hosting product is a zero-data control plane over the client-hosted path. Glassdocs configures your repo and deploys from your GitHub Actions to your Cloudflare. It never creates or deletes repos, never stores your content, and never holds your Cloudflare token: the token is sealed into your repo as an Actions secret and used only by your own CI. Your docs never leave your GitHub and your Cloudflare.
+
+Setup from the [admin dashboard](admin.md) takes about five minutes:
+
+1. **Install the Glassdocs GitHub App** on your org. It asks for a least-privilege footprint: read/write repo contents (scaffolding and editor commits), Actions variables, workflows, secrets (sealing the Cloudflare token), and pull requests (for protected-branch PRs). It never creates or deletes repos, and an owner approves.
+2. **Create your repo from the KB template** at [github.com/Glassdocs/kb-template/generate](https://github.com/Glassdocs/kb-template/generate), or point setup at any existing repo: the wizard's "Add Glassdocs KB files" option scaffolds the KB files into it, template not required. Glassdocs never creates repos for you.
+3. **Pick the repo in the dashboard** and name the Cloudflare Pages project. If the KB already has a live site, use that project's exact existing name; a new name spins up a second, separate site and orphans the real one.
+4. **Connect Cloudflare with one paste.** A pre-scoped token link selects exactly the two permission groups the publisher needs. Create the token, paste it, press Connect. Glassdocs verifies it and seals it into the repo; the token is never stored by Glassdocs.
+5. **Set who can read it.** Set a staff domain for your team, plus optional client access. Access is fail-closed: leave every field blank and the site deploys locked to nobody, not "staff-only". The Access panel is also how you recover a locked-out KB later. Docs meant for the whole world can instead opt in to a public, ungated KB right in the wizard — see [public mode](publishing.md#public-mode).
+6. **Press "Set up & deploy"** and watch live status in the dashboard. On the first run, Cloudflare Access is created to gate the site, and the deploy only reports success once an unauthenticated request is provably redirected to the Access login. See [Publishing](publishing.md) for the full verify-or-rollback pipeline.
+
+!!! tip "Pick one Cloudflare account"
+    Choose the single Cloudflare account you want all your KBs to live in and connect tokens from that account. Mixing accounts across KBs is the most common source of confusion. If a token can reach more than one account, the dashboard asks which one to deploy to.
+
+!!! warning "Don't use \"Connect to Git\" on the Pages project"
+    Glassdocs publishes by direct upload from CI. A Pages project wired to a Git repo via Cloudflare's "Connect to Git" can't accept these deploys. Let Glassdocs create and drive the project, and leave its Git integration off.
+
+A couple of Cloudflare behaviors worth knowing: `pages.dev` subdomains are globally unique across all of Cloudflare, so a taken name gets you a suffixed URL (still gated, still working; the dashboard links you to the real URL). And if you delete a Pages project and recreate one with the same name, Cloudflare enforces a short name-reuse cooldown before the name is available again.
+
+## How managed hosting works
+
+The publisher already contains the mechanism managed hosting is built on. Normally the reusable workflow builds the repo that calls it. It also accepts a `source-repo` input (with an optional `source-ref`, and a `SOURCE_TOKEN` secret granting read access), which tells it to build a *different* repo: your KB repo, checked out and built from a workflow running on Glassdocs infrastructure instead of in your own Actions.
+
+Everything downstream is the same secure-by-default pipeline described in [Publishing](publishing.md): Zensical build, compliance lint, Cloudflare Access gating, fail-closed access grants, post-deploy verification with rollback. The difference is who owns the CI minutes and the Cloudflare account.
+
+!!! info "Status: not yet generally available"
+    The `source-repo` build path ships in the publisher today, but managed hosting as a product (sign-up, plans, a free trial, Glassdocs-operated serving for your KB) is still being built. Until it launches, the supported paths are client-hosted: the plain [deploy.yml](publishing.md) or the guided dashboard flow above. If managed hosting is what you're waiting for, [contact us](mailto:hello@rocketlab.com.au).
+
+## Choosing a model
+
+- **Choose client-hosted** if your docs must never leave infrastructure you own. The zero-data property is absolute: Glassdocs orchestrates, but the repo, the build, the published site, the Access policy, and the API token all stay in your accounts.
+- **Watch for managed** if you want zero Cloudflare setup and are comfortable with Glassdocs-operated infrastructure reading your repo and serving your site.
+
+Larger organizations weighing the two should also read [Enterprise](enterprise.md) and [Security](security.md).
+
+
+---
+
+# Admin Dashboard
+
+<!-- https://docs.glassdocs.site/admin/ -->
+
+# Org admin dashboard
+
+The Glassdocs admin dashboard at [app.glassdocs.site/admin](https://app.glassdocs.site/admin/) is where an organization owner runs Glassdocs for their whole team: sign in with GitHub, pick your org, set one shared AI key so staff never paste credentials, connect Cloudflare, and set up, monitor, and redeploy knowledge bases — all without Glassdocs ever creating repos or storing your content.
+
+!!! info "Who can use it"
+    You must be an **admin/owner of a GitHub organization**. Glassdocs has no accounts of its own — GitHub is the identity, and the dashboard only shows orgs where GitHub says you are an admin. If you sign in and see "No organizations to manage", ask an org owner to set things up (or create an org). See [Security & privacy](security.md) for how sign-in works under the hood.
+
+## Sign in and pick your organization
+
+1. Open [app.glassdocs.site/admin](https://app.glassdocs.site/admin/) and click **Sign in with GitHub**. This is a standard GitHub OAuth flow (scope `read:org`) that identifies you and your org roles.
+2. After sign-in, the dashboard shows an **Organization** picker listing every GitHub org you administer. Everything on the page — the shared key, the KB list, every action — is scoped to the selected org.
+
+Your dashboard session lasts about 8 hours. If it expires while a tab is still open, the page switches to the signed-out view with a "session expired" note rather than leaving a stale header — sign in again to continue.
+
+## Set the org-wide shared AI key
+
+The **Shared AI key** card lets you set **one provider key for your whole GitHub org**. Your teammates just install the [extension](extension.md), sign in with GitHub, and start editing — their extension resolves to the org key automatically via a membership lookup, so **staff never paste a key**.
+
+On the card you can:
+
+- **Choose a provider** — OpenAI or Anthropic — and a **model** (any model your key can access; a custom model already configured is preserved in the list).
+- **Set or replace the key.** It is stored AES-encrypted at rest, sent only to the AI provider, and never shown to your members. The card records which admin last updated it. Leaving the field blank on save keeps the existing key — but only while the provider stays the same; switching provider requires entering a key for the new provider (the save is rejected otherwise).
+- **Sync members** — refresh the org membership so new teammates resolve to the shared key.
+- **Remove key** — members lose managed AI until you set a new one.
+- **Watch usage** — the card shows member count plus tokens used today and in total. Only token *counts* are metered; prompts and responses are never stored (see [Security & privacy](security.md)).
+
+!!! tip "Your key means your spend — and no free-tier cap"
+    When your org has a key configured, members' AI usage runs on your key and your provider account, and is not counted against the Glassdocs free-tier caps. Without an org key, members fall back to the free managed tier with fair-use limits.
+
+## Connect GitHub (install the Glassdocs app)
+
+Knowledge-base features need the **Glassdocs GitHub App** installed on your org. If it isn't installed yet, the dashboard shows a **Connect GitHub** card:
+
+1. Click **Install the Glassdocs app on GitHub**, pick your org, choose which repos to grant, and approve.
+2. Back in the dashboard, click **I've installed it — recheck**.
+
+The app asks for **least-privilege** access — read and write repo contents (scaffolding the KB starter files), Actions variables, workflows, secrets (sealing your Cloudflare token), and pull requests (for protected branches). It **never creates or deletes repos**, and never stores your content. The installation record is the only thing Glassdocs keeps, and the grant is yours to revoke at any time by uninstalling the app.
+
+## Knowledge bases
+
+The **Knowledge bases** card lists every KB in the org with its repo, published site URL (`<project>.pages.dev`), the Cloudflare account it deploys to, its access state (staff-only, client grants, or a 🌐 **public** chip for explicitly public KBs), and a **live deploy status chip** — queued, running, deployed, or failed — pulled straight from GitHub Actions and linked to the run logs. Status refreshes automatically (faster while a deploy is in flight) and on demand via **Refresh**, which re-crawls the org's repos.
+
+### Set up a KB
+
+Glassdocs configures existing repos; it doesn't create them. First create a repo in your org from the [Glassdocs KB template](https://github.com/Glassdocs/kb-template/generate), then click **＋ Set up a KB**:
+
+1. **Pick your repo and name the site.** Only repos the Glassdocs app can access appear — grant the app the repo (or click **Reload**) if yours is missing. The **Cloudflare Pages project** name becomes your site URL, `<project>.pages.dev`.
+
+    !!! warning "Reconnecting an existing site?"
+        If the KB already has a live Pages site, enter that project's **exact** name — a new name creates a second, separate site and orphans the real one. After you connect Cloudflare, the form warns if the name you chose isn't an existing project on the account. A name that *does* match an existing project triggers a blocking confirmation at submit — deploying there replaces whatever that site currently serves. And a project name already registered to a **different** KB is refused outright (a hard 409, no override — and the error never names another customer's repo).
+
+2. **Connect Cloudflare.** Click **Create token on Cloudflare** — the link pre-selects exactly the two permissions the publisher needs (**Cloudflare Pages: Edit** and **Access: Apps and Policies: Edit**) and pre-fills a per-KB token name. Create the token, paste it, and press **Connect**. Glassdocs verifies the token and **seals it into the repo as a GitHub Actions secret** — the token is **never stored by Glassdocs**; from then on only your own CI uses it. If the token spans multiple Cloudflare accounts, the form asks which one to deploy to — use the same account for all your KBs. If the repo already carried a `CLOUDFLARE_API_TOKEN` secret (say, for its own CI), Connect replaces it and warns you it did — re-check any other workflow that relied on the old one.
+
+    !!! warning "Don't use Cloudflare's *Connect to Git*"
+        Glassdocs publishes by direct upload from GitHub Actions. A Pages project wired to Git won't accept these deploys.
+
+3. **Set who can read it.** Access is **fail-closed with no default** — a blank field grants no one through that channel, and leaving *every* field blank deploys the site locked to nobody. Set the **Staff domain** (your org's email domain) to grant your whole team SSO read access; optionally add a **Client domain** or individual **Client emails** for external readers. For docs meant for the whole world, tick **🌐 Public KB** instead — an explicit opt-in that publishes the site world-readable with **no** Access gate. Checking it disables and clears the staff/client fields (public and access grants are mutually exclusive); leaving it unchecked keeps the default staff-gated setup. See [Hosting](hosting.md) for the full access model and [Publishing](publishing.md#public-mode) for public mode.
+
+4. **Deploy.** Leave **Add Glassdocs KB files** checked if the repo didn't start from the template (it commits `deploy.yml`, `mkdocs.yml`, and `docs/`), then click **Set up & deploy**. Glassdocs writes the project and access variables to the repo and dispatches the first deploy in **your** GitHub Actions — which builds the Markdown with Zensical, publishes to your Cloudflare Pages, and creates the Cloudflare Access gate fail-closed. If the repo's default branch is protected, Glassdocs opens a pull request with the files instead and links it.
+
+Watch the status chip in the KB list; a failed run names the step that broke and links to the logs. Full pipeline details are in [Publishing](publishing.md).
+
+### Manage an existing KB
+
+Each KB row offers:
+
+- **📄 Pages** — a read-only viewer for the KB's `docs/*.md`: browse what each page contains without leaving the console, with an **Edit on GitHub** link per page. Editing itself lives in the [extension's Edit mode](extension.md) or on GitHub, where changes carry your own identity and the nav (`mkdocs.yml`) can be updated too. Content passes through, but is never stored by, Glassdocs.
+- **Access** — loads the KB's **current live** staff/client values, lets you change them, and **Save & redeploy** applies the new policy. Clearing every field locks the site to no one (fail-closed) — this panel is also how you recover a locked-out KB: set the staff domain and save.
+- **☁ Cloudflare** — re-connect and re-seal the Cloudflare token for this KB (the fix for a "check Cloudflare credentials" deploy failure), then **Redeploy**.
+- **Redeploy** — trigger a fresh deploy of the current content.
+- **Remove** — unpublish: stops future deploys and removes the KB from the list. The live site and Cloudflare project stay up; you can re-add the KB anytime via **Set up a KB**.
+
+## After deploying: verify the gate
+
+Once a KB reports **deployed**, open its `pages.dev` URL in a private window — you should be redirected to the Cloudflare Access login, not shown content. See [Hosting](hosting.md) for the verification steps and [Security & privacy](security.md) for why publishing is fail-closed by design.
+
+## Related pages
+
+- [How it works](how-it-works.md) — the zero-data control-plane model.
+- [Getting started](getting-started.md) — the end-to-end first-KB walkthrough.
+- [Extension](extension.md) — what your teammates install.
+- [Enterprise](enterprise.md) — org-managed rollout options.
+- [API](api.md) — the endpoints behind the dashboard.
+
+
+---
+
+# Browser Extension
+
+<!-- https://docs.glassdocs.site/extension/ -->
+
+# Browser Extension
+
+The Glassdocs browser extension turns any published knowledge base into something you can talk to — and edit. Open the side panel on a docs page to ask questions about what you're reading; switch to Edit mode and an AI agent proposes concrete changes to the page's source in GitHub. You review a diff, then Apply to open a pull request or push a commit — every change attributed to your own GitHub identity. No "open the repo, find the file, clone, edit, PR" detour.
+
+!!! note "Store listing name"
+    The extension is currently listed on the Chrome Web Store as **Docs Chat** (v0.53.0). It is being renamed **GlassDocs** in its next release — same extension, same ID, same link.
+
+## What it does
+
+- **Chat about the current page.** The extension reads the docs page in your active tab (URL, title, and visible text — only when you send a message) and answers questions about it.
+- **Edit mode.** Ask for a change and the agent proposes edits to the page's source files in GitHub. You see a diff preview with **Apply** / **Cancel** — nothing is written until you apply.
+- **Apply → PR or direct commit.** Applied edits either open a pull request or push a commit directly, depending on the mode you choose. Commits are made with *your* GitHub sign-in, so authorship and review flows stay honest.
+- **Per-repo chat history.** Conversations are kept per repository, so switching between docs sites keeps each thread intact.
+
+## Install
+
+Install from the Chrome Web Store:
+
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/docs-chat/ljbopnkkljoapnahdpodpbjlgkjccdoc)**
+
+The listing is **unlisted** — reachable only via this link, not via store search. Store installs update automatically in the background.
+
+Compatible with any Chromium browser that supports Manifest V3 and the side-panel API: Chrome 120+, Edge, Brave, Arc.
+
+### First run
+
+1. Open any Glassdocs-enabled docs site.
+2. Click the extension's toolbar icon (pin it so it's always visible). The browser opens a side panel.
+3. The banner under the header shows the repo and source path resolved from the current URL, e.g. `your-org/your-repo — docs/index.md`.
+4. Sign in with GitHub (a one-time device-flow authorization). That's all you need for the default **Managed** backend — no API key.
+5. Start chatting. To bring your own key instead, open the options page and pick a different backend.
+
+## Backends
+
+The extension is a chat surface; the actual AI calls go through a pluggable backend. Pick one in the extension's Options page.
+
+### Managed (no key) — the default
+
+Sign in with GitHub and go. Glassdocs runs the AI: the extension sends your requests to the managed backend at `app.glassdocs.site`, using your GitHub sign-in token as the credential. The backend verifies your identity, enforces fair-use caps, and forwards to the provider with its own key — you never obtain or paste an API key.
+
+To point at a self-hosted backend instead, set a **Managed base URL** (up to `/v1`) in Options. See [API](api.md) for the backend's endpoints.
+
+### Claude (bring your own key)
+
+1. Open the extension **Options**.
+2. Paste your own **Anthropic API key**.
+3. Sign in with GitHub (device flow) or paste a personal access token with `repo` scope — GitHub auth is shared across backends.
+4. Pick a model.
+
+Traffic goes straight from your browser to the Anthropic API; there is no Glassdocs server in the path.
+
+### OpenAI (bring your own key)
+
+Same as Claude, with your own **OpenAI API key** in the OpenAI section of Options. Uses the same multi-turn tool loop (list pages, read files, propose edits) and the same GitHub auth.
+
+### GitHub Models
+
+Uses GitHub's OpenAI-compatible inference at `models.github.ai` — no separate AI key.
+
+1. In Options, open the GitHub Models section and pick a model.
+2. Leave the token blank to reuse your GitHub sign-in (it needs the `models:read` permission), or paste a models-scoped fine-grained personal access token.
+
+!!! tip "Organizations"
+    Admins can push a shared backend configuration to every install via Chrome managed policy, so staff never pick a backend or paste a key. See [Enterprise deployment](enterprise.md).
+
+## How a site opts in
+
+A docs site connects to the extension by emitting a single meta tag in its rendered HTML:
+
+```html
+<meta name="source-repo" content="owner/repo">
+```
+
+That's the whole contract — no registry, no per-user setup. The extension reads the tag to resolve which repository backs the page, fetch source files, propose edits, and open pull requests.
+
+- Repo detection is **only** via this tag. The GitHub repository's website/homepage field is not used.
+- `docs-repo` is accepted as a legacy alias for the tag name.
+- Sites built and published with Glassdocs emit the tag automatically at deploy time — see [Publishing](publishing.md).
+- Clean URLs (no `.html` suffix) and trailing slashes are resolved to source files automatically.
+
+### Where in-page affordances appear
+
+The side panel and repo detection work on **any** site that carries the `source-repo` meta tag. The in-page affordances (the "Edit this" control and highlight overlays, injected by the content script) load automatically only on `https://*.pages.dev/*` — docs sites published on Cloudflare Pages.
+
+On any other site — including `*.glassdocs.site` hosts — opening the side panel from the toolbar icon injects the content script into the active tab, so the affordances appear there once the panel is open.
+
+## GitHub identity
+
+The extension has no account or login of its own — GitHub is the identity. Signing in uses the **GitHub App device flow**: click **Sign in with GitHub**, enter the short code on github.com, and authorize. Tokens are stored in your browser's extension storage and refreshed automatically; they are never sent to any Glassdocs server, except that in Managed mode your token rides along as the bearer credential, where the backend verifies it per-request and stores nothing. See [Security](security.md) for the full model.
+
+A power user can paste a personal access token instead of using the device flow.
+
+## Privacy
+
+The extension sends network traffic only to:
+
+- the AI backend you configured — your own provider (Anthropic, OpenAI, GitHub Models) in bring-your-own-key modes, or the Glassdocs managed backend in Managed mode;
+- GitHub, for reading source files and opening pull requests or pushing commits;
+- the current tab's page (read-only, to extract the text you're chatting about).
+
+No telemetry and no phone-home. In bring-your-own-key modes there is no shared server at all. In Managed mode, prompts and page context pass through the managed backend (which authenticates you and meters usage for fair-use caps); switch to a bring-your-own-key backend to keep everything client-to-provider. Settings live in Chrome's synced extension storage, scoped to your browser profile, and are cleared when you remove the extension.
+
+## See also
+
+- [Getting Started](getting-started.md) — authoring conventions for the pages you'll be editing
+- [How it works](how-it-works.md) — the overall Glassdocs pipeline
+- [Enterprise deployment](enterprise.md) — force-install and shared configuration for organizations
+- [API](api.md) — the managed backend the default mode talks to
+
+
+---
+
+# MCP Server
+
+<!-- https://docs.glassdocs.site/mcp/ -->
+
+# MCP Server
+
+The Glassdocs MCP server lets an AI coding agent — Claude Code, Claude Desktop, Cursor — read every knowledge base in your GitHub organization directly. Ask "what does our runbook say about failover?" in the terminal you're already in, and the agent searches across all your KBs and answers from the source. No browser, no tab switching, no copy-pasting a page into a prompt.
+
+It complements the [browser extension](extension.md): the extension is for reading and editing *the page in front of you*, the MCP server is for asking questions *across everything you have*.
+
+!!! info "Availability"
+    Currently in preview for design partners and Glassdocs staff. A one-command `npx` install is shipping shortly — see [Installing](#installing).
+
+## What you get
+
+Five tools, all read-only:
+
+| Tool | What it does |
+| --- | --- |
+| `list_kbs` | Every KB in the org — repo, Cloudflare project, live URL, access mode, deploy status. |
+| `list_docs` | The Markdown pages in one KB. |
+| `read_doc` | One page's full content. |
+| `kb_status` | Live deploy status straight from GitHub Actions. Use when a publish looks stuck. |
+| `search` | Case-insensitive search across pages, returning matching lines. Narrow with `repo` for speed. |
+
+Every tool is annotated `readOnlyHint: true` and `destructiveHint: false`, so well-behaved MCP clients run them without interrupting you for confirmation.
+
+## Authentication
+
+Your own **GitHub token** — the same credential the rest of the [managed API](api.md) takes. There is no Glassdocs API key, no OAuth consent screen, and no account to create.
+
+By default the server runs `gh auth token`, so if you're signed in with the [GitHub CLI](https://cli.github.com) there is nothing to configure. Set `GLASSDOCS_TOKEN` instead if you'd rather supply it directly.
+
+You must be an **admin** of the GitHub organization, exactly as for the [admin dashboard](admin.md). Nothing is stored: Glassdocs verifies the token against GitHub per request and discards it.
+
+To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down.
+
+## Installing
+
+```bash
+claude mcp add glassdocs \
+  --env GLASSDOCS_ORG=your-org \
+  -- npx -y @glassdocs/kb-mcp
+```
+
+Then restart your session and ask your agent to list your knowledge bases.
+
+For Claude Desktop, add the same command to `claude_desktop_config.json`; for Cursor, to `~/.cursor/mcp.json`.
+
+### Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GLASSDOCS_ORG` | — | Your GitHub org. Every tool also accepts an `org` argument, so this is just the default. |
+| `GLASSDOCS_TOKEN` | `gh auth token` | Supply a GitHub token directly instead of using the CLI. |
+| `GLASSDOCS_API` | `https://app.glassdocs.site` | Point at a different Glassdocs backend. |
+
+## It is read-only — here's how to write
+
+The MCP server cannot create or change pages, and this is deliberate rather than a gap waiting to be filled. Writes to a KB should carry the author's own GitHub identity and land through review, which a background tool call is a poor fit for.
+
+To change KB content:
+
+- **Use the [browser extension](extension.md)** — describe the change, review the diff, Apply. Commits are attributed to you and can open a pull request.
+- **Or edit the repo directly** — a KB is just Markdown in `docs/` plus `mkdocs.yml`. Clone it, write, push; the publish workflow deploys it. See [Writing a KB](authoring.md).
+
+An agent with this MCP server connected can do the second option itself: it reads the KB through the MCP tools, then edits the cloned repo with its normal file tools. That combination — read through Glassdocs, write through git — is the intended workflow for bulk authoring.
+
+## Troubleshooting
+
+| Message | Cause |
+| --- | --- |
+| *the GitHub token is missing, expired, or revoked* | The token isn't reaching the server, or GitHub has invalidated it. Check `gh auth status`. |
+| *you must be an ADMIN of this GitHub org* | MCP access follows dashboard access. Org owners can grant admin. |
+| *No GitHub token* | Neither `GLASSDOCS_TOKEN` nor `gh auth token` produced anything. Run `gh auth login`. |
+| *Couldn't reach https://app.glassdocs.site* | Network or backend problem — the origin is named in the message. |
+
+Search reports its own limits: it scans at most 300 pages per query and tells you when it truncated, along with any KB it couldn't read. If a result says it was truncated, narrow it with `repo`.
+
+## Related
+
+- [API Reference](api.md) — the HTTP endpoints underneath, callable directly.
+- [Browser Extension](extension.md) — read and edit the page you're on.
+- [Admin Dashboard](admin.md) — set up KBs and manage org access.
+
+
+---
+
+# Enterprise Deployment
+
+<!-- https://docs.glassdocs.site/enterprise/ -->
+
+# Enterprise Deployment
+
+Organizations on Google Workspace / Chrome Enterprise (or any MDM) can roll the [Glassdocs extension](extension.md) out to staff centrally: force-install it by its Chrome Web Store ID, then push a shared configuration — which backend to use and, optionally, a shared API key — through Chrome's managed policy. Staff open the side panel, sign in with GitHub, and start editing; nobody pastes a key. GitHub sign-in is always per-user, so every commit and pull request stays attributed to the individual who made it.
+
+## How managed configuration works
+
+The extension reads its policy from Chrome's read-only **managed storage** (the schema ships with the extension as `managed_schema.json`). An admin pushes the configuration once and every install in scope picks it up.
+
+- Locking is per **top-level key**: pushing any part of a provider block (e.g. `claude`) **overrides** and **locks** that whole block in the extension's Options page — including fields inside it you didn't set — shown under a "managed by your organization" banner.
+- Top-level keys you leave out entirely stay user-controlled.
+- **GitHub sign-in and commit identity are always per-user.** The schema does not accept a GitHub commit token — there is no policy key for one, and the extension ignores a `claude.githubToken` even if a stale cached policy still carries it. Every commit and pull request is attributed to the signed-in user; a policy cannot change that. (Users may still paste their *own* personal access token locally in the extension's Options — it stays in their own browser storage.)
+
+The policy keys mirror the extension's settings:
+
+| Key | Meaning |
+| --- | --- |
+| `adapter` | `"managed"` \| `"claude"` \| `"openai"` \| `"github-models"` |
+| `managed.baseUrl` | Self-hosted backend URL (up to `/v1`); omit for the hosted default |
+| `claude.apiKey` / `claude.model` | Shared Anthropic key + model |
+| `openai.apiKey` / `openai.model` | Shared OpenAI key + model |
+| `githubModels.token` / `githubModels.model` | GitHub Models token (needs `models:read`) + model |
+
+## Force-install via Google Workspace
+
+The extension's Chrome Web Store item ID is:
+
+```
+ljbopnkkljoapnahdpodpbjlgkjccdoc
+```
+
+In the Google Admin console:
+
+1. Go to **Devices → Chrome → Apps & extensions → Users & browsers**.
+2. Select the target **OU or group**.
+3. Click **＋ → Add from Chrome Web Store** and paste the item ID. (The listing is unlisted, so adding by ID is the way in.)
+4. Set **Installation policy** to *Force install* (or *Allow*).
+5. Paste one of the configurations below into **Policy for extensions**.
+
+!!! warning "Scope your rollout"
+    Select a narrow OU or group before saving — a policy set at the org root pushes to everyone. Start with a test OU containing just your own user.
+
+## Ready-to-paste configurations
+
+**A. Managed backend, hosted (simplest — staff just sign in with GitHub):**
+
+```json
+{ "adapter": "managed" }
+```
+
+**B. Managed backend, self-hosted (keep inference in-house):**
+
+```json
+{ "adapter": "managed", "managed": { "baseUrl": "https://docs-ai.internal.example.com/v1" } }
+```
+
+**C. Shared Anthropic key (staff never see or paste it):**
+
+```json
+{
+  "adapter": "claude",
+  "claude": { "apiKey": "sk-ant-REPLACE_ME", "model": "claude-sonnet-4-6" }
+}
+```
+
+**D. Shared OpenAI key:**
+
+```json
+{
+  "adapter": "openai",
+  "openai": { "apiKey": "sk-REPLACE_ME", "model": "gpt-5.4" }
+}
+```
+
+**E. GitHub Models (shared models-scoped token):**
+
+```json
+{
+  "adapter": "github-models",
+  "githubModels": { "token": "github_pat_REPLACE_ME", "model": "openai/gpt-4o" }
+}
+```
+
+!!! tip "Prefer the managed backend over a shared key"
+    Pushing a real key (C/D/E) puts a secret into your Chrome policy and hands it to every browser in scope. With the managed backend (A/B) the provider key lives server-side and is never delivered to the browser at all — that's the point of the managed tier. Use a shared key only if you specifically don't want a backend in the path.
+
+## Other platforms
+
+- **Windows:** set the same JSON object in the registry under `Software\Policies\Google\Chrome\3rdparty\extensions\<id>`.
+- **Linux:** a JSON policy file with the same object.
+- **macOS (without MDM, for testing):** deliver the policy as a Configuration Profile — Chrome only honours *forced* preferences as policy, so a plain `defaults write` is silently ignored. Restart Chrome fully after installing the profile; OS policy is only re-read on a full restart.
+
+!!! note "Unpacked developer builds may not receive policy"
+    Chrome often will not attach third-party managed storage to a developer-mode (unpacked) extension: `chrome://policy` shows the extension's section but reads "No policies set". This is a dev-mode limitation, not a policy mistake. Managed storage binds reliably once the extension is installed from the Chrome Web Store and the config is pushed as cloud policy via the Admin console — the production path.
+
+## Verify it landed
+
+Any one of these confirms delivery:
+
+- Open the extension's **Options** page — the controlled fields are disabled under the "managed by your organization" banner.
+- Visit `chrome://policy` (hit *Reload policies*) — a section for the extension appears with your values.
+- In the extension's service-worker console (`chrome://extensions` → the extension → "service worker"), run:
+
+```js
+chrome.storage.managed.get(null).then(console.log)
+```
+
+Expect the object you pushed.
+
+## See also
+
+- [Extension](extension.md) — what each backend does, and how users experience the locked settings
+- [API](api.md) — the managed backend the `"managed"` adapter talks to
+- [Admin](admin.md) — org-level administration of your knowledge bases
+- [Security](security.md) — the identity and data-handling model
+
+
+---
+
+# API Reference
+
+<!-- https://docs.glassdocs.site/api/ -->
+
+# Managed Backend API
+
+The Glassdocs managed backend at `https://app.glassdocs.site` is what the [extension's](extension.md) default **Managed (no key)** mode talks to: an authenticating, budgeting, usage-metering reverse proxy in front of an OpenAI-compatible model provider, plus a small identity endpoint. You authenticate with a GitHub token — there is no Glassdocs API key or account — and the backend stores no prompt or completion text, only token counts for metering.
+
+## Authentication
+
+Every request carries a **GitHub token** as a bearer credential:
+
+```
+Authorization: Bearer <github-token>
+```
+
+The backend verifies the token against GitHub on each request and discards it — no user tokens are stored server-side. The extension supplies the token from your GitHub sign-in automatically.
+
+| Response | Meaning |
+| --- | --- |
+| `401` | Missing or invalid GitHub token. |
+| `503` | GitHub itself couldn't be reached to verify your identity (outage, rate limit). Your token may be fine — retry. |
+
+The API is browser-callable: CORS is enabled for `GET`, `POST`, and `OPTIONS` with the `Authorization` and `Content-Type` headers.
+
+## Error shape
+
+All errors are JSON with the HTTP status carrying the semantics:
+
+```json
+{ "error": "Invalid GitHub token" }
+```
+
+## POST /v1/chat/completions
+
+An OpenAI-compatible chat completion. Point any OpenAI-format client at `https://app.glassdocs.site/v1` with the GitHub token in the API-key slot.
+
+```bash
+curl -sS https://app.glassdocs.site/v1/chat/completions \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      { "role": "user", "content": "Summarize this page for me." }
+    ]
+  }'
+```
+
+The response is a standard OpenAI-format chat completion, passed through from the provider.
+
+### What the backend enforces
+
+The request body is OpenAI-format, but a few fields are controlled server-side:
+
+- **Model** — the backend chooses the model (the operator-configured managed model, or your organization's configured model if it has a shared key). A `model` field in the request is overridden.
+- **No streaming** — responses are returned complete; `stream` is forced off.
+- **Output clamp** — `max_tokens` is capped at 8192 per request; multi-sample knobs (`n`, `best_of`, `logprobs`, `top_logprobs`) are dropped.
+
+### Who pays: org key or free tier
+
+- If you belong to a GitHub organization whose admin configured a **shared provider key** (see [Admin](admin.md)), that key and model are used. The org's own spend pays, and the free-tier caps below don't apply.
+- Otherwise you're on the **free tier**: Glassdocs' key pays, gated by fair-use token caps — a per-user daily cap and a global daily circuit breaker. Caps reset at midnight UTC. Check your remaining budget with [`GET /api/me`](#get-apime).
+
+### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Completion succeeded; OpenAI-format body. |
+| `400` | Unreadable or invalid JSON body. |
+| `401` | Missing or invalid GitHub token. |
+| `413` | Request too large — trim the prompt or page context and retry. Free tier only: this is an input-size estimate on free-tier requests; org-shared-key requests aren't size-checked. |
+| `429` | Free-tier cap hit: either your personal daily limit (resets tomorrow, UTC) or Glassdocs' global daily capacity. |
+| `503` | GitHub identity verification temporarily unavailable — retry. |
+| other | Upstream provider errors are passed through with the provider's status code. |
+
+!!! note "Zero-data metering"
+    Request and response bodies pass straight through. Only token *counts* are persisted for budgeting and usage attribution — no prompt or completion text is stored. Failed upstream calls refund the free-tier budget they reserved.
+
+## GET /api/me
+
+Identity, tenant, and remaining free-tier budget for the token's user. The extension calls this to display who you are and how much free budget remains.
+
+```bash
+curl -sS https://app.glassdocs.site/api/me \
+  -H "Authorization: Bearer $GITHUB_TOKEN"
+```
+
+Response:
+
+```json
+{
+  "login": "octocat",
+  "tenant": null,
+  "billing": "free",
+  "orgs": ["your-org"],
+  "budget": {
+    "perUserDaily": 100000,
+    "usedToday": 1234,
+    "remaining": 98766
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `login` | Your GitHub login, as verified from the token. |
+| `tenant` | Always `null` — free-tier identities have no stored tenant record (see [Security](security.md)). Retained for wire compatibility. |
+| `billing` | `"org"` when an organization's shared key pays for your requests, `"free"` when Glassdocs' free tier does. |
+| `orgs` | GitHub organizations the token can see. Informational only — org billing on `/v1` is resolved by a server-side seat lookup, not this list. |
+| `budget.perUserDaily` | Your daily free-tier token cap; `null` means uncapped. |
+| `budget.usedToday` | Tokens consumed so far today (UTC day). |
+| `budget.remaining` | Tokens left today; `null` when uncapped. |
+
+The budget shown here is computed with the same defaults the `/v1` enforcer uses, so what you see is what is enforced. When `billing` is `"org"` the free-tier numbers don't apply — your organization's key pays and Glassdocs enforces no cap.
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Identity and budget returned. |
+| `401` | Missing or invalid GitHub token. |
+| `503` | GitHub identity verification temporarily unavailable — retry. |
+
+## Self-hosting
+
+The backend is the same software whether Glassdocs hosts it or you do. The two endpoints above are the surface for the extension and API consumers; the server also exposes the admin/control-plane API used by the [admin dashboard](admin.md) — GitHub OAuth sign-in plus `/api/admin/org/...` routes for org configuration, keys, access, and KB setup. A self-hosted deployment ships the full surface. Point the extension's **Managed base URL** (up to `/v1`) at your host, or push it to your whole organization via [enterprise policy](enterprise.md). See [Hosting](hosting.md) for the deployment options.
+
+## See also
+
+- [Extension](extension.md) — the primary client of this API
+- [Enterprise deployment](enterprise.md) — pointing every staff install at a hosted or self-hosted backend
+- [Admin](admin.md) — configuring an org shared key so members skip the free-tier caps
+- [Security](security.md) — the identity model and what is (and isn't) stored
+
+## Knowledge-base read endpoints
+
+Since the MCP server shipped, the admin **read** endpoints accept the same GitHub bearer token as everything above. They are how the [MCP server](mcp.md) works, and you can call them directly.
+
+You must be an **admin** of the organization — the same check the [dashboard](admin.md) applies.
+
+!!! warning "Reads only"
+    A bearer token authenticates `GET` requests. Anything that changes state — creating a KB, redeploying, changing access — still requires a signed-in dashboard session, and answers `403 Bearer-token auth is read-only` otherwise. This is deliberate: state changes should carry a reviewed, attributable identity rather than a long-lived token in a config file.
+
+### GET /api/admin/org/{org}/kbs
+
+Every KB registered for the organization.
+
+```bash
+curl -sS https://app.glassdocs.site/api/admin/org/your-org/kbs \
+  -H "Authorization: Bearer $(gh auth token)"
+```
+
+```json
+{
+  "org": "your-org",
+  "count": 2,
+  "kbs": [
+    {
+      "repo": "your-org/handbook",
+      "name": "handbook",
+      "cfProject": "your-org-handbook",
+      "siteUrl": "https://your-org-handbook.pages.dev",
+      "isArchived": false,
+      "lastStatus": "success"
+    }
+  ]
+}
+```
+
+### GET /api/admin/org/{org}/kbs/docs
+
+With `?repo=` — the Markdown pages in that KB. Add `&path=` to read one page.
+
+```bash
+# list
+curl -sS "https://app.glassdocs.site/api/admin/org/your-org/kbs/docs?repo=handbook" \
+  -H "Authorization: Bearer $(gh auth token)"
+
+# read one page
+curl -sS "https://app.glassdocs.site/api/admin/org/your-org/kbs/docs?repo=handbook&path=docs/index.md" \
+  -H "Authorization: Bearer $(gh auth token)"
+```
+
+Page content is read from your GitHub repo on each request and never stored by Glassdocs — the same passthrough guarantee as the rest of the control plane.
+
+### GET /api/admin/org/{org}/kbs/status
+
+Live deploy status for every KB, straight from GitHub Actions. The `lastStatus` in the list endpoint comes from a cached crawl and can lag; this doesn't.
+
+| Response | Meaning |
+| --- | --- |
+| `401` | Missing, expired or revoked GitHub token. |
+| `403` | Not an admin of this organization — or a non-`GET` attempted with a bearer token. |
+
+
+---
+
+# Security & Privacy
+
+<!-- https://docs.glassdocs.site/security/ -->
+
+# Security & privacy
+
+Glassdocs is a **zero-data control plane**: your Markdown lives in your GitHub repos, your published sites live on your Cloudflare account, and Glassdocs never stores document content, prompts, or model responses. This page explains the authentication model, exactly what data flows where (and when), what the managed backend can and cannot see, how private sites are gated, and what Glassdocs will never do with your data.
+
+## The zero-data model
+
+Glassdocs orchestrates; it does not host your data. The data plane — content, access rules, published sites, build compute — stays in **your** GitHub and Cloudflare accounts.
+
+| State | Lives in |
+| --- | --- |
+| KB content (`docs/*.md`), nav and theme (`mkdocs.yml`), branding assets | Your GitHub repo — Glassdocs never copies it |
+| Published site | Your Cloudflare Pages, deployed by your own GitHub Actions |
+| Read-access policy (who can view the site) | Your repo's Actions variables → Cloudflare Access |
+| GitHub App installation | Your GitHub org — revocation = uninstall |
+| Identity records and one AES-GCM-encrypted org AI key | Glassdocs (org shared-key tier only, no content) |
+| Usage counters | Glassdocs — **token counts only**, never prompts or responses; per-request records exist only for the org shared-key tier |
+| KB inventory and audit log | Glassdocs — the inventory is regenerable from GitHub; audit records hold metadata (e.g. a file path and byte count), never content |
+
+Editing keeps the same invariant: edits go through the [extension](extension.md) (the console offers a read-only page viewer), and the page body only *transits* the control plane — no document body is ever written to Glassdocs storage. Unsaved edits live in your browser.
+
+### The free tier stores nothing about you
+
+On the free tier, Glassdocs keeps **no records about you at all** — no account rows, no per-request logs. If you use the extension with your own AI key, Glassdocs is not in the path and stores nothing. If you use the managed no-key AI, no record of your requests is kept either: the only trace is a set of **anonymous daily rate counters** used for abuse control — derived with a keyed hash (HMAC) so they cannot be mapped back to your GitHub login, unlinkable from one day to the next, and self-expiring at the end of each UTC day. The free tier includes **unlimited published KBs** — they run on your own Cloudflare account with your own AI key, so there is no reason for us to cap them.
+
+## Authentication
+
+**GitHub is the identity.** There is no Glassdocs password or separate account — every actor proves who they are with a GitHub token, and every write is attributed to their own GitHub user.
+
+### Humans in the extension — GitHub App device flow
+
+The extension signs you in with the GitHub App **device flow** (no client secret, no redirect). You authorize on github.com; GitHub returns a short-lived user token (about 8 hours) plus a rotating refresh token (about 6 months) that the extension renews transparently. If the refresh token is truly dead — expired, revoked, or the app uninstalled — the stored token is cleared and you're prompted to sign in again.
+
+These tokens are stored in your browser's `chrome.storage` and are **never sent to any Glassdocs server**, with one exception: in Managed mode the token is presented as a bearer credential so the backend can verify who you are (below). A power user can paste a Personal Access Token instead of using the device flow.
+
+### Org admins in the dashboard — GitHub OAuth
+
+The [admin dashboard](admin.md) uses a standard GitHub OAuth flow (scope `read:org`) with defense in depth:
+
+- A server-generated `state` value, held in an HttpOnly, Secure, SameSite=Lax cookie, protects the flow against CSRF.
+- Your admin session is an **AES-GCM-encrypted**, HttpOnly cookie with expiry checking.
+- Post-login redirects derive from the request origin, never from a request parameter — no open redirect.
+
+Every admin route verifies you are a **GitHub admin of the org in question** before doing anything on that org — authorization is checked *before* any org-scoped credential is minted, so tokens cannot be used cross-tenant.
+
+### The server acting on your repos — installation tokens
+
+To configure or deploy a KB, the backend acts as the **GitHub App installation on your org** — never with an admin's personal token. It mints short-lived (1-hour) installation tokens scoped to your installation, and only after the org-admin check above. The app's footprint: read and write repo contents (scaffolding commits the KB starter files), read/write Actions variables, workflows, and secrets (the Cloudflare connect flow seals your token into repo secrets), and pull requests (protected-branch setup PRs); it never creates or deletes repos. Uninstalling the app revokes everything.
+
+## How page content reaches AI backends
+
+Nothing is sent anywhere until you act. The extension reads the **active tab only**, and **only when you send a message** — there is no background collection. What it reads: the page's URL, title, visible text and HTML, plus any text you selected. Where it goes depends on the backend *you* choose:
+
+=== "Bring-your-own-key (Claude, OpenAI, GitHub Models)"
+
+    Your prompt and page context go **directly from your browser to the provider** you configured, authenticated with your own key. Glassdocs is not in the path and never sees this data.
+
+=== "Managed (no key)"
+
+    Your prompt and page context pass through the managed backend at `app.glassdocs.site`, which:
+
+    - **verifies your identity** by checking your GitHub token against GitHub per request — the token is verified and discarded, never stored server-side;
+    - **resolves the key**: your org's shared key if an admin configured one (see [the admin dashboard](admin.md)), otherwise the Glassdocs free-tier key with fair-use caps;
+    - **forwards the request and returns the response complete** (streaming is disabled server-side), persisting **only token counts** — never the prompt, the page content, or the model's reply. On the free tier even those counts are anonymous daily rate counters (see above); per-request metering records exist only when an org's own shared key pays.
+
+    Switch to a BYO-key backend at any time to keep everything browser-to-provider.
+
+Reads and writes to your repos (fetching source files, commits, pull requests) go from your browser to the GitHub API with your own token, and are attributed to your GitHub identity.
+
+## Key and token custody
+
+| Credential | Where it lives | Notes |
+| --- | --- | --- |
+| Your GitHub sign-in tokens (extension) | Your browser (`chrome.storage`) | Sent to Glassdocs only as the Managed-mode bearer credential; verified per request, never stored |
+| Your BYO provider keys (extension) | Your browser (`chrome.storage`) | Sent only to the provider you chose |
+| Org shared AI key | Glassdocs, **AES-GCM encrypted at rest** | Sent only to the AI provider; never shown to members; removable by an org admin at any time |
+| Cloudflare API token | **Your repo**, as a GitHub Actions secret | Verified once at connect time, then sealed into the repo — Glassdocs never stores it; only your own CI uses it |
+| App installation tokens | Minted on demand, ~1-hour lifetime | Only after the org-admin check |
+| Admin session | Encrypted HttpOnly cookie | AES-GCM, expiry-checked |
+
+Secrets never appear in logs or URLs; error messages carry provider error text, not tokens.
+
+## Private sites: Cloudflare Access, fail-closed
+
+Published KBs are gated by **Cloudflare Access** on your own account: visitors must pass SSO (staff email domain) or an explicit client grant (external domain or listed emails) before seeing any content. The design is deliberately **fail-closed**:
+
+- **No default access.** A blank access field grants no one; a KB with nothing set deploys locked to nobody — never public by accident.
+- **Gate before content.** On first deploy, if the Access application can't be created, the deploy aborts *before* any content is published.
+- **Pre-flight check.** If the site is already publicly reachable, the deploy fails rather than proceed without an active gate.
+- **Verify or roll back.** After each deploy the workflow probes the site; the only accepted proof is an Access login redirect. Anything else — including a publicly readable site — deletes the deployment and fails the run, so success is never reported on an unproven gate.
+- **Policy reconciliation.** Every deploy deletes the Access app's existing policies and recreates them from the repo's declared variables, so the live policy always matches what the repo declares — a manual dashboard edit is overwritten on the next deploy.
+- **Preview deployments are never created by the publish flow** — only the production site is deployed. (No Pages setting disables previews outright yet; that hardening is tracked in [Glassdocs/publisher#3](https://github.com/Glassdocs/publisher/issues/3).)
+
+"Nothing public by default" is enforced end-to-end, not at any single layer: making a KB public requires a strict explicit opt-in at every step — the [wizard checkbox](admin.md) defaults off, the API accepts only a strict boolean, and the [workflow input](publishing.md#public-mode) defaults to `false`. The admin's choice is authoritative over any pre-existing workflow state (a gated setup over a leftover public workflow restores the gate), and a deploy is never dispatched ahead of an unapplied access-mode change.
+
+You can verify the gate yourself any time: open your site's URL signed out and confirm you're redirected to the Cloudflare Access login. See [Hosting](hosting.md).
+
+## What Glassdocs does not do
+
+- No analytics, telemetry, tracking pixels, or advertising.
+- No selling or sharing of your data with third parties for their own purposes.
+- No use of your content to train AI models by Glassdocs.
+- No background collection — page content is read only when you actively send a message.
+- No repo creation or deletion on your org, ever.
+
+!!! note "Optional local debug channel"
+    For developers, an off-by-default diagnostics option can stream extension events to a local collector. It is restricted to loopback addresses (`localhost` / `127.0.0.1`); a non-loopback destination is ignored, so page content cannot be exfiltrated. It stays off unless you turn it on.
+
+## Your controls
+
+- **Revoke Glassdocs's access to your org** by uninstalling the GitHub App — the installation record is all Glassdocs keeps.
+- **Clear keys, tokens, and chat history** any time from the extension's Options page, or by removing the extension.
+- **Avoid the managed backend entirely** by choosing a bring-your-own-key backend.
+- **Rotate the Cloudflare token** per KB from the [admin dashboard](admin.md); it re-seals into your repo.
+- Data handled by the AI providers and by GitHub is governed by their own privacy policies.
+
+If your organization deploys the extension via Chrome enterprise policy, an administrator may push a read-only shared configuration (such as which backend to use); that config is set by your organization, not collected by Glassdocs, and GitHub sign-in remains per-user. See [Enterprise](enterprise.md).
+
+## Privacy policy
+
+The full privacy policy for the extension (published as "Docs Chat") is at **[glassdocs.site/privacy.html](https://glassdocs.site/privacy.html)**.
+
+## Related pages
+
+- [How it works](how-it-works.md) — the architecture behind these guarantees.
+- [Admin dashboard](admin.md) — the org-level controls described above.
+- [Extension](extension.md) · [Publishing](publishing.md) · [Hosting](hosting.md) · [API](api.md)
+
+
+---
+
+# Credits
+
+<!-- https://docs.glassdocs.site/credits/ -->
+
+# Credits
+
+Glassdocs is built and maintained by the development team at [Rocket Lab](https://www.rocketlab.com.au).
+
+## Rocket Lab Development Team
+
+The people who designed, built, and ship Glassdocs:
+
+- **Sergey Ivochkin** — lead engineer, architecture, backend, and docs pipeline
+- **Rocket Lab Dev Team** — product design, Cloudflare integration, extension, and QA
+
+## Built on great open-source foundations
+
+Glassdocs would not be possible without the following projects:
+
+- [MkDocs](https://www.mkdocs.org) — static site generation
+- [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) — theme and component system
+- [Cloudflare Pages](https://pages.cloudflare.com) — edge hosting and CDN
+- [Cloudflare Access](https://www.cloudflare.com/products/zero-trust/access/) — zero-trust access control
+- [GitHub Actions](https://github.com/features/actions) — CI/CD pipeline
+
+## Acknowledgements
+
+Thanks to everyone who tested early versions, filed feedback, and helped shape what Glassdocs is today.
+
+---
+
+*Glassdocs is a commercial product by [Rocket Lab](https://www.rocketlab.com.au). All rights reserved.*

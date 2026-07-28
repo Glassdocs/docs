@@ -20,7 +20,7 @@ Editing keeps the same invariant: edits go through the [extension](extension.md)
 
 ### The free tier stores nothing about you
 
-On the free tier, Glassdocs keeps **no records about you at all** — no account rows, no per-request logs. If you use the extension with your own AI key, Glassdocs is not in the path and stores nothing. If you use the managed no-key AI, no record of your requests is kept either: the only trace is a set of **anonymous daily rate counters** used for abuse control — derived with a keyed hash (HMAC) so they cannot be mapped back to your GitHub login, unlinkable from one day to the next, and self-expiring at the end of each UTC day. The free tier includes up to 3 published KBs.
+On the free tier, Glassdocs keeps **no records about you at all** — no account rows, no per-request logs. If you use the extension with your own AI key, Glassdocs is not in the path and stores nothing. If you use the managed no-key AI, no record of your requests is kept either: the only trace is a set of **anonymous daily rate counters** used for abuse control — derived with a keyed hash (HMAC) so they cannot be mapped back to your GitHub login, unlinkable from one day to the next, and self-expiring at the end of each UTC day. The free tier includes **unlimited published KBs** — they run on your own Cloudflare account with your own AI key, so there is no reason for us to cap them.
 
 ## Authentication
 
