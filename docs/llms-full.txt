@@ -922,7 +922,7 @@ The Glassdocs MCP server lets an AI coding agent — Claude Code, Claude Desktop
 It complements the [browser extension](extension.md): the extension is for reading and editing *the page in front of you*, the MCP server is for asking questions *across everything you have*.
 
 !!! info "Availability"
-    In preview for design partners and Glassdocs staff. The hosted version — which needs no install at all, just a URL, and which grants access based on **who may read a KB** rather than requiring GitHub org admin — is in development. See [Availability](#availability).
+    The hosted server is **live** and needs no install — see [Connecting](#connecting). Open to any member of your GitHub organization.
 
 ## What you get
 
@@ -942,37 +942,34 @@ Every tool is annotated `readOnlyHint: true` and `destructiveHint: false`, so we
 
 Your own **GitHub token** — the same credential the rest of the [managed API](api.md) takes. There is no Glassdocs API key, no OAuth consent screen, and no account to create.
 
-By default the server runs `gh auth token`, so if you're signed in with the [GitHub CLI](https://cli.github.com) there is nothing to configure. Set `GLASSDOCS_TOKEN` instead if you'd rather supply it directly.
+If you're signed in with the [GitHub CLI](https://cli.github.com), `gh auth token` supplies it and there is nothing else to configure.
 
-You must be an **admin** of the GitHub organization, exactly as for the [admin dashboard](admin.md). Nothing is stored: Glassdocs verifies the token against GitHub per request and discards it.
+Nothing is stored: Glassdocs verifies the token against GitHub on each request and discards it. It is read-only — the server refuses a token-authenticated write outright, so a connected agent cannot change anything even if asked.
 
 To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down.
 
-## Availability
+## Connecting
 
-Two versions, and the difference is who they can serve.
-
-**Today — preview.** A local server that runs on your own machine and forwards your GitHub token. It requires you to be an **admin of the GitHub organization**, which in practice means it is for the team already working in the repos. Design partners and Glassdocs staff can get it from us.
-
-**In development — hosted.** Added with a URL, no install:
+One line, nothing to download:
 
 ```bash
-claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp
+claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp \
+  --header "Authorization: Bearer $(gh auth token)"
 ```
 
-It removes the install step, and it relaxes the permission: the hosted server is intended for everyone on your GitHub organization, not only its admins.
+Restart your session and ask your agent to list your knowledge bases.
 
-Reaching further than that — a client or a colleague who reads your KB but has no GitHub account — is a separate and larger question. Reader access to a published KB is enforced by Cloudflare Access on *your* account, from the staff and client grants you set; Glassdocs writes those grants but never authenticates those readers itself, and has no identity for them. Extending MCP to them means giving Glassdocs a way to know who they are, which is a deliberate architectural decision rather than a follow-up. It is not currently planned.
+For Claude Desktop or Cursor, put the same URL and header in their MCP config. Any client that speaks HTTP transport works — there is no Glassdocs package to install.
 
-### Configuration
+The `--header` is a temporary step: a browser sign-in is coming, after which the URL alone will do. The endpoint already advertises the challenge OAuth-capable clients look for, so your setup won't need to change when it lands.
 
-These apply to the local preview.
+Each tool takes an `org` argument, so one connection covers every organization you belong to.
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `GLASSDOCS_ORG` | — | Your GitHub org. Every tool also accepts an `org` argument, so this is just the default. |
-| `GLASSDOCS_TOKEN` | `gh auth token` | Supply a GitHub token directly instead of using the CLI. |
-| `GLASSDOCS_API` | `https://app.glassdocs.site` | Point at a different Glassdocs backend. |
+### Who can use it
+
+Any **member** of the GitHub organization, not only admins — reading your team's docs shouldn't require the standing to rotate the team's API keys.
+
+It does not reach people outside your GitHub organization. A client or colleague who reads a published KB is authenticated by Cloudflare Access on *your* account, from the staff and client grants you set; Glassdocs writes those grants but never authenticates those readers and holds no identity for them. Extending MCP to them would mean giving Glassdocs its own notion of who they are — a deliberate architectural decision, not a follow-up, and not currently planned.
 
 ## It is read-only — here's how to write
 
@@ -990,11 +987,10 @@ An agent with this MCP server connected can do the second option itself: it read
 | Message | Cause |
 | --- | --- |
 | *the GitHub token is missing, expired, or revoked* | The token isn't reaching the server, or GitHub has invalidated it. Check `gh auth status`. |
-| *you must be an ADMIN of this GitHub org* | MCP access follows dashboard access. Org owners can grant admin. |
-| *No GitHub token* | Neither `GLASSDOCS_TOKEN` nor `gh auth token` produced anything. Run `gh auth login`. |
-| *Couldn't reach https://app.glassdocs.site* | Network or backend problem — the origin is named in the message. |
+| *You must be a member of this GitHub organization* | You aren't in the org you named, or your token can't see that membership. |
+| *Not signed in* | The `Authorization` header isn't reaching the server. Re-add the connection. |
 
-Search reports its own limits: it scans at most 300 pages per query and tells you when it truncated, along with any KB it couldn't read. If a result says it was truncated, narrow it with `repo`.
+Search reports its own limits: it scans at most 200 pages per query and tells you when it truncated, along with any KB it couldn't read. If a result says it was truncated, narrow it with `repo`.
 
 ## Related
 
