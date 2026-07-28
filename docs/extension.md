@@ -100,8 +100,13 @@ The extension sends network traffic only to:
 
 No telemetry and no phone-home. In bring-your-own-key modes there is no shared server at all. In Managed mode, prompts and page context pass through the managed backend (which authenticates you and meters usage for fair-use caps); switch to a bring-your-own-key backend to keep everything client-to-provider. Settings live in Chrome's synced extension storage, scoped to your browser profile, and are cleared when you remove the extension.
 
+## Prefer the terminal?
+
+The extension is for reading and editing the page in front of you. If you'd rather stay in your editor, the [MCP server](mcp.md) lets Claude Code, Claude Desktop or Cursor read every KB in your org at once — good for "which of our KBs mentions this?" questions that span more than one page. It's read-only; come back here to make changes.
+
 ## See also
 
+- [MCP server](mcp.md) — read your KBs from an AI coding agent
 - [Getting Started](getting-started.md) — authoring conventions for the pages you'll be editing
 - [How it works](how-it-works.md) — the overall Glassdocs pipeline
 - [Enterprise deployment](enterprise.md) — force-install and shared configuration for organizations

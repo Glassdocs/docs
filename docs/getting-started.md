@@ -119,6 +119,10 @@ Almost always this is a **wrong Cloudflare account**. Check that the KB is conne
 **The deploy fails at the Access step.**
 The publisher is deliberately **fail-closed**: if it can't create or verify the Cloudflare Access policy, it aborts before publishing rather than risk exposing your content. Check that the connected token still has **Access: Apps and Policies: Edit** (and **Cloudflare Pages: Edit**), then redeploy.
 
+## Next: read your KBs from an AI agent
+
+With a KB published, the [MCP server](mcp.md) lets Claude Code, Claude Desktop or Cursor read it — and every other KB in your org — directly, authenticated with your own GitHub token. Useful once you have more than one KB and want answers that span them.
+
 ## How this maps to the security model
 
 For the full design — the zero-data control plane, the per-customer GitHub App installation, the token sealed into your repo, and the fail-closed publish invariants — see [How it works](how-it-works.md) and [Security](security.md).

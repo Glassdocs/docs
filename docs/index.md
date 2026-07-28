@@ -48,6 +48,8 @@ The Glassdocs browser extension (Docs Chat) attaches an AI side panel to any pub
 
 A site opts in with a single meta tag naming its source repository — no SDK, no embedded script. AI calls go through the managed backend at [app.glassdocs.site](https://app.glassdocs.site), which supports a free tier or your organization's own AI provider key, and meters token counts only. See the [Extension guide](extension.md) and [How it works](how-it-works.md).
 
+Not in a browser? The [MCP server](mcp.md) gives Claude Code, Claude Desktop and Cursor read access to every KB in your organization, so an agent can search across all of them and answer from the source without you opening a page. Same GitHub identity, read-only — edits still go through the extension or a pull request.
+
 !!! note "Your docs never leave your accounts"
     This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, an audit log, a small registry of which repos are set up as KBs, and the GitHub App installation record — never your documents. See [Security](security.md).
 

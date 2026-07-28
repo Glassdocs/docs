@@ -57,6 +57,8 @@ The Glassdocs browser extension (Docs Chat) attaches an AI side panel to any pub
 
 A site opts in with a single meta tag naming its source repository — no SDK, no embedded script. AI calls go through the managed backend at [app.glassdocs.site](https://app.glassdocs.site), which supports a free tier or your organization's own AI provider key, and meters token counts only. See the [Extension guide](extension.md) and [How it works](how-it-works.md).
 
+Not in a browser? The [MCP server](mcp.md) gives Claude Code, Claude Desktop and Cursor read access to every KB in your organization, so an agent can search across all of them and answer from the source without you opening a page. Same GitHub identity, read-only — edits still go through the extension or a pull request.
+
 !!! note "Your docs never leave your accounts"
     This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, an audit log, a small registry of which repos are set up as KBs, and the GitHub App installation record — never your documents. See [Security](security.md).
 
@@ -201,6 +203,10 @@ Almost always this is a **wrong Cloudflare account**. Check that the KB is conne
 
 **The deploy fails at the Access step.**
 The publisher is deliberately **fail-closed**: if it can't create or verify the Cloudflare Access policy, it aborts before publishing rather than risk exposing your content. Check that the connected token still has **Access: Apps and Policies: Edit** (and **Cloudflare Pages: Edit**), then redeploy.
+
+## Next: read your KBs from an AI agent
+
+With a KB published, the [MCP server](mcp.md) lets Claude Code, Claude Desktop or Cursor read it — and every other KB in your org — directly, authenticated with your own GitHub token. Useful once you have more than one KB and want answers that span them.
 
 ## How this maps to the security model
 
@@ -890,8 +896,13 @@ The extension sends network traffic only to:
 
 No telemetry and no phone-home. In bring-your-own-key modes there is no shared server at all. In Managed mode, prompts and page context pass through the managed backend (which authenticates you and meters usage for fair-use caps); switch to a bring-your-own-key backend to keep everything client-to-provider. Settings live in Chrome's synced extension storage, scoped to your browser profile, and are cleared when you remove the extension.
 
+## Prefer the terminal?
+
+The extension is for reading and editing the page in front of you. If you'd rather stay in your editor, the [MCP server](mcp.md) lets Claude Code, Claude Desktop or Cursor read every KB in your org at once — good for "which of our KBs mentions this?" questions that span more than one page. It's read-only; come back here to make changes.
+
 ## See also
 
+- [MCP server](mcp.md) — read your KBs from an AI coding agent
 - [Getting Started](getting-started.md) — authoring conventions for the pages you'll be editing
 - [How it works](how-it-works.md) — the overall Glassdocs pipeline
 - [Enterprise deployment](enterprise.md) — force-install and shared configuration for organizations
