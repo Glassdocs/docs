@@ -960,7 +960,9 @@ Two versions, and the difference is who they can serve.
 claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp
 ```
 
-The important difference isn't convenience, it's authorization. The hosted server grants access based on **who may read a KB** — your staff domain, and the client domains and addresses you've granted — rather than on GitHub org membership. That means the people your KBs were published *for* can use it: a client reading their own knowledge base, someone in ops or marketing with no repo access at all. They have no GitHub permission to forward, so the local version can never serve them.
+It removes the install step, and it relaxes the permission: the hosted server is intended for everyone on your GitHub organization, not only its admins.
+
+Reaching further than that — a client or a colleague who reads your KB but has no GitHub account — is a separate and larger question. Reader access to a published KB is enforced by Cloudflare Access on *your* account, from the staff and client grants you set; Glassdocs writes those grants but never authenticates those readers itself, and has no identity for them. Extending MCP to them means giving Glassdocs a way to know who they are, which is a deliberate architectural decision rather than a follow-up. It is not currently planned.
 
 ### Configuration
 
