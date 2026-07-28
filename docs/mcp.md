@@ -5,7 +5,7 @@ The Glassdocs MCP server lets an AI coding agent — Claude Code, Claude Desktop
 It complements the [browser extension](extension.md): the extension is for reading and editing *the page in front of you*, the MCP server is for asking questions *across everything you have*.
 
 !!! info "Availability"
-    Currently in preview for design partners and Glassdocs staff. A one-command `npx` install is shipping shortly — see [Installing](#installing).
+    In preview for design partners and Glassdocs staff. The hosted version — which needs no install at all, just a URL, and which grants access based on **who may read a KB** rather than requiring GitHub org admin — is in development. See [Availability](#availability).
 
 ## What you get
 
@@ -31,19 +31,23 @@ You must be an **admin** of the GitHub organization, exactly as for the [admin d
 
 To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down.
 
-## Installing
+## Availability
+
+Two versions, and the difference is who they can serve.
+
+**Today — preview.** A local server that runs on your own machine and forwards your GitHub token. It requires you to be an **admin of the GitHub organization**, which in practice means it is for the team already working in the repos. Design partners and Glassdocs staff can get it from us.
+
+**In development — hosted.** Added with a URL, no install:
 
 ```bash
-claude mcp add glassdocs \
-  --env GLASSDOCS_ORG=your-org \
-  -- npx -y @glassdocs/kb-mcp
+claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp
 ```
 
-Then restart your session and ask your agent to list your knowledge bases.
-
-For Claude Desktop, add the same command to `claude_desktop_config.json`; for Cursor, to `~/.cursor/mcp.json`.
+The important difference isn't convenience, it's authorization. The hosted server grants access based on **who may read a KB** — your staff domain, and the client domains and addresses you've granted — rather than on GitHub org membership. That means the people your KBs were published *for* can use it: a client reading their own knowledge base, someone in ops or marketing with no repo access at all. They have no GitHub permission to forward, so the local version can never serve them.
 
 ### Configuration
+
+These apply to the local preview.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
