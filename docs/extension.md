@@ -102,7 +102,7 @@ No telemetry and no phone-home. In bring-your-own-key modes there is no shared s
 
 ## Prefer the terminal?
 
-The extension is for reading and editing the page in front of you. If you'd rather stay in your editor, the [MCP server](mcp.md) lets Claude Code, Claude Desktop or Cursor read every KB in your org at once — good for "which of our KBs mentions this?" questions that span more than one page. It's read-only; come back here to make changes.
+The extension is for reading and editing the page in front of you. If you'd rather stay in your editor, the [MCP server](mcp.md) lets Claude Code, Claude Desktop or Cursor read every KB in your org at once — good for "which of our KBs mentions this?" questions that span more than one page. It can edit as well as read, opening a pull request by default — the difference is that the extension shows you a diff in the page you're on, while the MCP server works across every KB at once.
 
 ## See also
 

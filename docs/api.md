@@ -132,8 +132,10 @@ Since the MCP server shipped, the admin **read** endpoints accept the same GitHu
 
 You must be an **admin** of the organization — the same check the [dashboard](admin.md) applies.
 
-!!! warning "Reads only"
-    A bearer token authenticates `GET` requests. Anything that changes state — creating a KB, redeploying, changing access — still requires a signed-in dashboard session, and answers `403 Bearer-token auth is read-only` otherwise. This is deliberate: state changes should carry a reviewed, attributable identity rather than a long-lived token in a config file.
+!!! warning "Reads only, on these endpoints"
+    A bearer token authenticates `GET` requests here. Anything that changes tenant state — creating a KB, redeploying, changing access — still requires a signed-in dashboard session, and answers `403 Bearer-token auth is read-only` otherwise. Those operations act through the Glassdocs GitHub App, so a long-lived token in a config file must not be able to trigger them.
+
+    The [MCP server](mcp.md) is the deliberate exception: it can write KB pages, because it commits with **your own** GitHub token rather than the App's. Authorship lands on you either way, which is the property that makes the difference.
 
 ### GET /api/admin/org/{org}/kbs
 

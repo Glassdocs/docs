@@ -9,7 +9,7 @@ It complements the [browser extension](extension.md): the extension is for readi
 
 ## What you get
 
-Five tools, all read-only:
+Five reads and one write:
 
 | Tool | What it does |
 | --- | --- |
@@ -18,8 +18,9 @@ Five tools, all read-only:
 | `read_doc` | One page's full content. |
 | `kb_status` | Live deploy status straight from GitHub Actions. Use when a publish looks stuck. |
 | `search` | Case-insensitive search across pages, returning matching lines. Narrow with `repo` for speed. |
+| `write_doc` | Create or replace a page — **as you**, opening a pull request by default. See [Writing](#writing). |
 
-Every tool is annotated `readOnlyHint: true` and `destructiveHint: false`, so well-behaved MCP clients run them without interrupting you for confirmation.
+The five reads are annotated `readOnlyHint: true`, so well-behaved clients run them without interrupting you. `write_doc` is annotated `destructiveHint: true`, so clients ask before it commits — that prompt is the equivalent of the extension's **Apply / Cancel** diff review.
 
 ## Authentication
 
@@ -27,7 +28,9 @@ Your own **GitHub token** — the same credential the rest of the [managed API](
 
 If you're signed in with the [GitHub CLI](https://cli.github.com), `gh auth token` supplies it and there is nothing else to configure.
 
-Nothing is stored: Glassdocs verifies the token against GitHub on each request and discards it. It is read-only — the server refuses a token-authenticated write outright, so a connected agent cannot change anything even if asked.
+Nothing is stored: Glassdocs verifies the token against GitHub on each request and discards it.
+
+The same token is what commits. When an agent writes a page, the commit is authored by **you** — the same mechanism the extension uses — so authorship, review and blame all work normally. Glassdocs never signs a change on your behalf.
 
 To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down.
 
@@ -54,16 +57,29 @@ Any **member** of the GitHub organization, not only admins — reading your team
 
 It does not reach people outside your GitHub organization. A client or colleague who reads a published KB is authenticated by Cloudflare Access on *your* account, from the staff and client grants you set; Glassdocs writes those grants but never authenticates those readers and holds no identity for them. Extending MCP to them would mean giving Glassdocs its own notion of who they are — a deliberate architectural decision, not a follow-up, and not currently planned.
 
-## It is read-only — here's how to write
+## Writing
 
-The MCP server cannot create or change pages, and this is deliberate rather than a gap waiting to be filled. Writes to a KB should carry the author's own GitHub identity and land through review, which a background tool call is a poor fit for.
+`write_doc` creates or replaces a page. Two modes, and the choice is yours — the same choice the extension offers under **Commit mode**:
 
-To change KB content:
+| Mode | What happens |
+| --- | --- |
+| `pr` (**default**) | Branches from your default branch, commits, and opens a pull request. You get the URL back and review before anything is live. |
+| `direct` | Commits straight to the default branch, which republishes immediately. |
 
-- **Use the [browser extension](extension.md)** — describe the change, review the diff, Apply. Commits are attributed to you and can open a pull request.
-- **Or edit the repo directly** — a KB is just Markdown in `docs/` plus `mkdocs.yml`. Clone it, write, push; the publish workflow deploys it. See [Writing a KB](authoring.md).
+Pull request is the default in both the extension and here, because the two shouldn't disagree about what's safe.
 
-An agent with this MCP server connected can do the second option itself: it reads the KB through the MCP tools, then edits the cloned repo with its normal file tools. That combination — read through Glassdocs, write through git — is the intended workflow for bulk authoring.
+Ask for what you want and the agent picks the tool:
+
+> *"Add a rate-limits section to the API page and open a PR."*
+> *"Fix the typo on the runbook index — commit it directly."*
+
+Writes are confined to Markdown under `docs/` in **registered knowledge bases**. The server will refuse a path outside `docs/**.md`, and refuse a repository that isn't set up as a KB — so a connected agent can't reach the rest of your organization's code.
+
+### If you'd rather it didn't write
+
+Nothing forces you to use it. Your MCP client controls whether a destructive tool runs, and `write_doc` is annotated so that a client prompts by default. You can also just not ask.
+
+For bulk authoring, cloning the repo and editing locally is still often faster — the agent can read through Glassdocs and write through git.
 
 ## Troubleshooting
 
