@@ -33,7 +33,7 @@ That's it. The site is built by **Zensical**, the MkDocs successor from the Mate
 
 Glassdocs is a **zero-data control plane**. Publishing runs in **your own GitHub Actions**, with **your own Cloudflare credentials**, deploying to **your own Cloudflare Pages** project behind **Cloudflare Access**:
 
-- **Nothing is public by default.** Access is fail-closed: a KB with no access rules deploys locked to nobody, and every deploy verifies the gate is actually up — rolling itself back rather than leaving content exposed. The only way to publish openly is the publisher's explicit `public: true` input (this documentation site deploys that way), in which case the post-deploy check verifies the site is reachable instead. See [Publishing](publishing.md#public-mode).
+- **Nothing is public by default.** Access is fail-closed: a KB with no access rules deploys locked to nobody, and every deploy verifies the gate is actually up — undoing itself rather than leaving content exposed. The only way to publish openly is the publisher's explicit `public: true` input (this documentation site deploys that way), in which case the post-deploy check verifies the site is reachable instead. See [Publishing](publishing.md#public-mode).
 - **You keep custody.** Glassdocs never creates or deletes repos, never stores your Cloudflare token (it is sealed into your repo as an Actions secret), and never stores your document content, prompts, or AI responses.
 - **Revocation is yours.** Uninstall the Glassdocs GitHub App and the grant is gone.
 

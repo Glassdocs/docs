@@ -62,7 +62,7 @@ When you push to the KB repo (or trigger a redeploy from the admin), the publish
 
 1. **Fail-closed on first deploy** — if the Cloudflare Access app can't be created, the workflow aborts *before* publishing any content.
 2. **Pre-flight block** — if the domain is already publicly reachable (HTTP 2xx), the deploy fails: the gate isn't active.
-3. **Post-deploy verify-or-rollback** — after deploying, the workflow probes the site again; if it's public, the latest deployment is deleted and the run fails. It never reports success on a gate it couldn't prove was up.
+3. **Post-deploy verify, act on proof** — after deploying, the workflow probes the site again. If it serves content to an unauthenticated request, that is proof of exposure: production is rolled back to the previous good build, or the Pages project is deleted when that run created it and there's nothing to roll back to. If the site simply isn't reachable yet — normal for the first minutes of a new project — nothing has been served, so the gate is confirmed against the Cloudflare Access API instead. It never reports success on a gate it couldn't prove was up.
 4. **Reconcile by replace** — every deploy deletes the existing Access policies on the app and recreates them from the repo variables, so the live policy always matches the declared inputs; a manual dashboard edit doesn't linger — it's overwritten on the next deploy.
 5. **No preview deployments** — the direct-upload flow never creates per-branch preview URLs, though no Pages setting currently disables them outright (tracked in [Glassdocs/publisher#3](https://github.com/Glassdocs/publisher/issues/3)).
 
