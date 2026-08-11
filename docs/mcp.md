@@ -9,7 +9,7 @@ It complements the [browser extension](extension.md): the extension is for readi
 
 ## What you get
 
-Five reads and one write:
+Seven reads and three writes:
 
 | Tool | What it does |
 | --- | --- |
@@ -18,13 +18,17 @@ Five reads and one write:
 | `read_doc` | One page's full content. |
 | `kb_status` | Live deploy status straight from GitHub Actions. Use when a publish looks stuck. |
 | `search` | Case-insensitive search across pages, returning matching lines. Narrow with `repo` for speed. |
+| `list_prs` | Pull requests in a KB — state, URL, title, branch, and whether it merged. This is how an agent finds the PR it opened earlier. See [Following a pull request](#following-a-pull-request). |
+| `pr_status` | One pull request in full, including whether it **merged** and whether GitHub currently considers it mergeable. |
 | `write_doc` | Create or replace a page — **as you**, opening a pull request by default. See [Writing](#writing). |
+| `delete_doc` | Remove a page — as you, opening a pull request by default. |
+| `move_doc` | Rename or relocate a page, keeping its content, as one reviewable change. See [Renaming a page](#renaming-a-page). |
 
-The five reads are annotated `readOnlyHint: true`, so well-behaved clients run them without interrupting you. `write_doc` is annotated `destructiveHint: true`, so clients ask before it commits — that prompt is the equivalent of the extension's **Apply / Cancel** diff review.
+The seven reads are annotated `readOnlyHint: true`, so well-behaved clients run them without interrupting you. The three writes are annotated `destructiveHint: true`, so clients ask before they commit — that prompt is the equivalent of the extension's **Apply / Cancel** diff review.
 
 ### What it will and won't reach
 
-Every tool — **reads included**, not only `write_doc` — is confined to repositories registered as knowledge bases in the org you name. Ask an agent to read `docs/secrets.md` from a repo that isn't a KB and it is refused, by name, with a pointer to `list_kbs`. This matters because reads run on the Glassdocs GitHub App's installation token while you are authorized only as an org *member*: without that confinement, membership alone would reach any repo the app can see. Membership is not a repository permission, and the KB registry is the boundary that matches what someone actually consented to publish.
+Every tool — **reads included**, not only the writes — is confined to repositories registered as knowledge bases in the org you name. Ask an agent to read `docs/secrets.md` from a repo that isn't a KB and it is refused, by name, with a pointer to `list_kbs`. This matters because reads run on the Glassdocs GitHub App's installation token while you are authorized only as an org *member*: without that confinement, membership alone would reach any repo the app can see. Membership is not a repository permission, and the KB registry is the boundary that matches what someone actually consented to publish.
 
 Archived KBs are excluded from every tool.
 
@@ -85,7 +89,7 @@ It does not reach people outside your GitHub organization. A client or colleague
 
 ## Writing
 
-`write_doc` creates or replaces a page. Two modes, and the choice is yours — the same choice the extension offers under **Commit mode**:
+`write_doc` creates or replaces a page, `delete_doc` removes one, and `move_doc` renames one. All three commit as **you**. Two modes, and the choice is yours — the same choice the extension offers under **Commit mode**:
 
 | Mode | What happens |
 | --- | --- |
@@ -94,18 +98,37 @@ It does not reach people outside your GitHub organization. A client or colleague
 
 Pull request is the default in both the extension and here, because the two shouldn't disagree about what's safe.
 
+`move_doc` is the exception: it has **no `direct` mode**, and asking for one is refused. A rename is two commits — create the new page, remove the old — and two commits straight to your default branch can't be atomic. If the second one failed, the page would be live at *both* paths and the publisher would build the duplicate. On the pull-request path both halves sit on one branch, so your site only ever sees the finished move. To land a rename immediately, merge the pull request it opens.
+
 Ask for what you want and the agent picks the tool:
 
 > *"Add a rate-limits section to the API page and open a PR."*
 > *"Fix the typo on the runbook index — commit it directly."*
+> *"That runbook is superseded — delete it."*
 
-Writes are confined to Markdown under `docs/` in **registered knowledge bases**. The server will refuse a path outside `docs/**.md`, and refuse a repository that isn't set up as a KB — so a connected agent can't reach the rest of your organization's code.
+Writes are confined to Markdown under `docs/` in **registered knowledge bases**. The server will refuse a path outside `docs/**.md`, and refuse a repository that isn't set up as a KB — so a connected agent can't reach the rest of your organization's code. For `move_doc` that applies to *both* ends: a destination outside `docs/**.md` is refused rather than approximated.
 
-`write_doc` also accepts the `sha` that `read_doc` returned for the page. Supplying it makes the write conditional on the version the agent actually read: if anyone commits to that page while you're reviewing the diff, the write is refused instead of quietly reverting them. Well-behaved agents pass it, because `write_doc` sends the *whole* page — without it, every byte that changed in the meantime is silently overwritten.
+All three writes accept the `sha` that `read_doc` returned for the page. Supplying it makes the change conditional on the version the agent actually read: if anyone commits to that page while you're reviewing the diff, the change is refused instead of quietly reverting them. Well-behaved agents pass it, because `write_doc` sends the *whole* page — without it, every byte that changed in the meantime is silently overwritten.
+
+### Renaming a page
+
+Use `move_doc` rather than asking for a create-then-delete. An agent composing those two calls itself gets it wrong in the obvious place: if the delete fails, the page is left live at both paths and your site publishes both copies. `move_doc` either moves the page or changes nothing — both halves land on one branch and one pull request, and if any part of it fails the branch is discarded.
+
+It refuses rather than guessing in two cases worth knowing about: the destination already exists (it will not overwrite a page you didn't mention), and the source has changed since the agent read it.
+
+Renaming a page changes its published URL. Nothing rewrites the links that pointed at the old one, so a rename is worth reviewing in the pull request even when the diff looks trivial.
+
+### Following a pull request
+
+A write returns the pull request URL once. `list_prs` and `pr_status` are how an agent picks the thread back up in a later turn — "did that PR get merged?", "what else is open?" — without you having to keep the link.
+
+Pull requests these tools opened are flagged with `openedByGlassdocs`, so an agent can pick its own edits out of a busy repo; the branch names are `glassdocs/…`. `list_prs` covers every KB in the org if you omit `repo`, and defaults to **all** states rather than open ones, because a PR you're following up has usually already closed.
+
+A closed pull request may have been merged or abandoned, and `state` alone can't tell you which. `pr_status` reports both GitHub's `merged` flag and an `outcome` in words — `open`, `merged`, or `closed without merging`. Its `mergeable` field can be `null`, which means GitHub hasn't finished computing the test merge yet, not that the PR can't be merged; that usually resolves within seconds of a PR being opened.
 
 ### If you'd rather it didn't write
 
-Nothing forces you to use it. Your MCP client controls whether a destructive tool runs, and `write_doc` is annotated so that a client prompts by default. You can also just not ask.
+Nothing forces you to use them. Your MCP client controls whether a destructive tool runs, and all three writes are annotated so that a client prompts by default. You can also just not ask.
 
 For bulk authoring, cloning the repo and editing locally is still often faster — the agent can read through Glassdocs and write through git.
 
@@ -126,6 +149,10 @@ Your agent relays these verbatim, so they are listed here exactly as they appear
 | *Cross-origin requests are not accepted by this endpoint.* — HTTP **403** | The request carried a browser `Origin` header from another site. The endpoint is for MCP clients, not web pages, and refusing this is what stops a hostile page using your browser's credentials. | Connect from an MCP client rather than a browser. |
 | *`<path>` in `<org>/<repo>` changed since you read it, so this write was refused rather than overwriting someone else's edit* | Someone committed to the page between your agent reading it and writing it back. | Ask the agent to re-read the page and re-apply your change to the new content. It can do that in one turn. |
 | *That page doesn't exist in this KB.* | The path is wrong, or the page has been moved or deleted. | `list_docs` to see the real paths. |
+| *`<path>` does not exist in `<org>/<repo>`, so there is nothing to delete / move.* | The agent guessed a path, or the page was already removed. | `list_docs`. Nothing was changed. |
+| *`<path>` already exists in `<org>/<repo>`. move_doc will not overwrite a page* | The rename's destination is an existing page. | Pick a different name, or if the two really should be merged, have the agent write the combined page and delete the old one. |
+| *move_doc has no 'direct' mode.* | A rename was asked for with `mode: 'direct'`. A move is two commits and can't be committed atomically to your default branch — see [Writing](#writing). | Let it open the pull request, then merge it. |
+| *`<org>/<repo>` has no pull request #N.* | The number is wrong, or the PR is in a different KB. | `list_prs` for the repo. |
 
 A `search` result that carries `truncated` is not an error — see [Search](#search).
 
