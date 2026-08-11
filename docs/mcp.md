@@ -68,6 +68,9 @@ claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp \
 
 Restart your session and ask your agent to list your knowledge bases.
 
+!!! warning "`https://app.glassdocs.site/mcp` is the only endpoint — this page's own URL is not one"
+    The address of *this page* — `https://docs.glassdocs.site/mcp/` — is documentation, not a server. Point a client at it and it will hang rather than fail: the docs site answers **200 with HTML**, so the client reads that as a stream that opened and closed, and reconnects for as long as you leave it running. Nothing reports an error at either end. If your agent connects but never lists a knowledge base, check the URL you pasted.
+
 For Claude Desktop or Cursor, put the same URL and header in their MCP config. Any client that speaks HTTP transport works — there is no Glassdocs package to install.
 
 The `--header` is a temporary step: a browser sign-in is coming, after which the URL alone will do. An unauthenticated request already gets a proper **401** with the `WWW-Authenticate` challenge an OAuth-capable client looks for, so a client can tell an unauthenticated connection from a broken server. The metadata document that challenge points at is not served yet — a client that fetches it gets a clean 404, which correctly reads as "this server runs no authorization server". Nothing about your setup will need to change when sign-in lands.
