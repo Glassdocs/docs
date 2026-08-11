@@ -939,13 +939,36 @@ Five reads and one write:
 
 The five reads are annotated `readOnlyHint: true`, so well-behaved clients run them without interrupting you. `write_doc` is annotated `destructiveHint: true`, so clients ask before it commits — that prompt is the equivalent of the extension's **Apply / Cancel** diff review.
 
+### What it will and won't reach
+
+Every tool — **reads included**, not only `write_doc` — is confined to repositories registered as knowledge bases in the org you name. Ask an agent to read `docs/secrets.md` from a repo that isn't a KB and it is refused, by name, with a pointer to `list_kbs`. This matters because reads run on the Glassdocs GitHub App's installation token while you are authorized only as an org *member*: without that confinement, membership alone would reach any repo the app can see. Membership is not a repository permission, and the KB registry is the boundary that matches what someone actually consented to publish.
+
+Archived KBs are excluded from every tool.
+
+### Limits
+
+Defaults, and an operator can change them for a deployment:
+
+| Limit | Default | What happens at the edge of it |
+| --- | --- | --- |
+| Tool calls per org, per hour | 300 | The next call is refused with the reset time, in minutes. |
+| Size of a page `write_doc` may write | 1 MB | The write is refused, naming the size and the limit, so an agent can split the page and retry. |
+| JSON-RPC messages per batch | 16 | The request is refused with HTTP 400. Ordinary clients send one message per request and never see this. |
+| Pages one `search` call can read | Depends on the org — see [Search](#search) | The result says so and is explicitly not complete. |
+
+### Search
+
+`search` reads pages from GitHub one at a time, and a single request has a fixed budget of GitHub calls. Listing each KB spends part of it, so **the number of pages one query can cover falls as the organization registers more KBs** — there is no single page count to quote.
+
+When a query doesn't fit, the result carries a `truncated` field saying how many pages of how many were read and why, plus `reposSkipped` for any KB not searched at all. Treat that as a warning and not a footnote: the answer is a real answer from a partial view, so re-run with `repo` to search one KB at a time. A result with no `truncated` field covered everything.
+
 ## Authentication
 
 Your own **GitHub token** — the same credential the rest of the [managed API](api.md) takes. There is no Glassdocs API key, no OAuth consent screen, and no account to create.
 
 If you're signed in with the [GitHub CLI](https://cli.github.com), `gh auth token` supplies it and there is nothing else to configure.
 
-Nothing is stored: Glassdocs verifies the token against GitHub on each request and discards it.
+Your token is never stored — it is verified against GitHub on each request and discarded. The only thing kept is an anonymous hourly request counter, keyed by a hash of your organization name, used to enforce the hourly allowance under [Limits](#limits). It holds no document content, no page names and no user identity.
 
 The same token is what commits. When an agent writes a page, the commit is authored by **you** — the same mechanism the extension uses — so authorship, review and blame all work normally. Glassdocs never signs a change on your behalf.
 
@@ -964,7 +987,7 @@ Restart your session and ask your agent to list your knowledge bases.
 
 For Claude Desktop or Cursor, put the same URL and header in their MCP config. Any client that speaks HTTP transport works — there is no Glassdocs package to install.
 
-The `--header` is a temporary step: a browser sign-in is coming, after which the URL alone will do. The endpoint already advertises the challenge OAuth-capable clients look for, so your setup won't need to change when it lands.
+The `--header` is a temporary step: a browser sign-in is coming, after which the URL alone will do. An unauthenticated request already gets a proper **401** with the `WWW-Authenticate` challenge an OAuth-capable client looks for, so a client can tell an unauthenticated connection from a broken server. The metadata document that challenge points at is not served yet — a client that fetches it gets a clean 404, which correctly reads as "this server runs no authorization server". Nothing about your setup will need to change when sign-in lands.
 
 Each tool takes an `org` argument, so one connection covers every organization you belong to.
 
@@ -992,6 +1015,8 @@ Ask for what you want and the agent picks the tool:
 
 Writes are confined to Markdown under `docs/` in **registered knowledge bases**. The server will refuse a path outside `docs/**.md`, and refuse a repository that isn't set up as a KB — so a connected agent can't reach the rest of your organization's code.
 
+`write_doc` also accepts the `sha` that `read_doc` returned for the page. Supplying it makes the write conditional on the version the agent actually read: if anyone commits to that page while you're reviewing the diff, the write is refused instead of quietly reverting them. Well-behaved agents pass it, because `write_doc` sends the *whole* page — without it, every byte that changed in the meantime is silently overwritten.
+
 ### If you'd rather it didn't write
 
 Nothing forces you to use it. Your MCP client controls whether a destructive tool runs, and `write_doc` is annotated so that a client prompts by default. You can also just not ask.
@@ -1000,13 +1025,23 @@ For bulk authoring, cloning the repo and editing locally is still often faster �
 
 ## Troubleshooting
 
-| Message | Cause |
-| --- | --- |
-| *the GitHub token is missing, expired, or revoked* | The token isn't reaching the server, or GitHub has invalidated it. Check `gh auth status`. |
-| *You must be a member of this GitHub organization* | You aren't in the org you named, or your token can't see that membership. |
-| *Not signed in* | The `Authorization` header isn't reaching the server. Re-add the connection. |
+Your agent relays these verbatim, so they are listed here exactly as they appear.
 
-Search reports its own limits: it scans at most 200 pages per query and tells you when it truncated, along with any KB it couldn't read. If a result says it was truncated, narrow it with `repo`.
+| Message | Cause | What to do |
+| --- | --- | --- |
+| *Not signed in* — HTTP **401** | No credential reached the server. The `Authorization` header is missing from the connection. | Re-add the connection with the `--header` line above. |
+| *Invalid or expired GitHub token* — HTTP **401** | GitHub rejected the token: expired, revoked, or never valid. | `gh auth status`, then re-add the connection. Both 401s carry a `WWW-Authenticate` challenge, which is what lets a client tell "unauthenticated" from "broken". |
+| *You must be a member of this GitHub organization* | You aren't in the org you named — or your token can't see that you are. Membership is read from GitHub, and a token without the `read:org` scope makes a member look like a stranger. | Check the org spelling, then check the token's scopes. |
+| *`<org>` has used its hourly Glassdocs request allowance (300). It resets in about N minutes.* | The org hit the hourly tool-call limit — almost always an agent in a loop rather than a person. | Wait for the reset. If it keeps happening, something is retrying automatically. |
+| *"`<org>/<repo>`" is not a knowledge base in `<org>`* | The repo isn't registered as a KB, or it's archived. This applies to **reads as well as writes**. | Run `list_kbs`, or set the repo up as a KB in the [admin dashboard](admin.md). |
+| *Page is N kB; the limit is 1000 kB. Split it into several pages.* | `write_doc` was given more than the maximum page size. | Split the page. A KB page this large is usually several pages anyway. |
+| *Batch too large: N messages (max 16). Split it.* — HTTP **400** | The client sent more JSON-RPC messages in one request than the server accepts. | Normal clients never hit this; if yours does, it is batching aggressively. |
+| *Unsupported MCP-Protocol-Version "…"* — HTTP **400** | The client asked for a protocol revision this server does not implement. The message lists the ones it does. | Update the client, or pin it to a listed revision. |
+| *Cross-origin requests are not accepted by this endpoint.* — HTTP **403** | The request carried a browser `Origin` header from another site. The endpoint is for MCP clients, not web pages, and refusing this is what stops a hostile page using your browser's credentials. | Connect from an MCP client rather than a browser. |
+| *`<path>` in `<org>/<repo>` changed since you read it, so this write was refused rather than overwriting someone else's edit* | Someone committed to the page between your agent reading it and writing it back. | Ask the agent to re-read the page and re-apply your change to the new content. It can do that in one turn. |
+| *That page doesn't exist in this KB.* | The path is wrong, or the page has been moved or deleted. | `list_docs` to see the real paths. |
+
+A `search` result that carries `truncated` is not an error — see [Search](#search).
 
 ## Related
 
