@@ -53,21 +53,44 @@ When a query doesn't fit, the result carries a `truncated` field saying how many
 
 Your own **GitHub token** — the same credential the rest of the [managed API](api.md) takes. There is no Glassdocs API key, no OAuth consent screen, and no account to create.
 
-If you're signed in with the [GitHub CLI](https://cli.github.com), `gh auth token` supplies it and there is nothing else to configure.
+Use a **fine-grained personal access token**, minted at [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new). What it needs depends entirely on whether you want an agent to write:
+
+| You want to | Resource owner | Repository access | Permissions |
+| --- | --- | --- | --- |
+| **Read** — everything except the three write tools | Your organization | None | **None at all.** Leave every permission unset. |
+| **Read and write** | Your organization | Only the KB repositories | **Contents:** read and write · **Pull requests:** read and write |
+
+A read-only token needing *no permissions* is not a simplification. Every read runs on the Glassdocs GitHub App's own installation token, not yours — your token is used for two things, "who are you" (`GET /user`) and "are you in this organization" (`GET /user/memberships/orgs`), and GitHub documents both as requiring no permissions on a fine-grained token. So a token that can do nothing at all on GitHub is enough to read every KB you're entitled to.
+
+!!! note "Your organization may need to approve it"
+    If your organization has not enabled fine-grained personal access tokens, or has them set to require approval, the token stays pending until an owner approves it — and until then it behaves like an invalid one. This is a one-time setting under the org's **Settings → Personal access tokens**.
+
+??? note "`gh auth token` also works, and here is what it costs"
+    If you're signed in with the [GitHub CLI](https://cli.github.com), `gh auth token` supplies a credential and nothing is refused — including connections you already made this way. But it is worth knowing what you'd be pasting into your MCP client's config file. It is not "a token for Glassdocs": it is the GitHub CLI's own OAuth token, and its scopes are the CLI's choice, not ours. Measured on a real one:
+
+    | Scope | What a holder of the token can do |
+    | --- | --- |
+    | `repo` | Read **and write** every private repository you can reach, in every organization |
+    | `admin:public_key` | **Add an SSH key to your account** — access that survives revoking the token |
+    | `gist` | Read and write all your gists, including secret ones |
+    | `project` | Read and write user and organization projects |
+    | `read:org` | List your organization memberships |
+
+    Glassdocs uses exactly two of those (`read:org`, and repository writes only if you ask an agent to write). The rest is blast radius you're carrying for nothing, in a file on disk that a third-party client wrote. Prefer the fine-grained token above.
 
 Your token is never stored — it is verified against GitHub on each request and discarded. The only thing kept is an anonymous hourly request counter, keyed by a hash of your organization name, used to enforce the hourly allowance under [Limits](#limits). It holds no document content, no page names and no user identity.
 
 The same token is what commits. When an agent writes a page, the commit is authored by **you** — the same mechanism the extension uses — so authorship, review and blame all work normally. Glassdocs never signs a change on your behalf.
 
-To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down.
+To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down — and this is the other reason to mint one for Glassdocs rather than reuse `gh auth token`: revoking a token minted for this costs you nothing else, while revoking the CLI's token signs you out of `gh` on every machine you use it from.
 
 ## Connecting
 
-One line, nothing to download:
+Nothing to download. Mint the token described under [Authentication](#authentication), then substitute it for `YOUR_GITHUB_PAT`:
 
 ```bash
 claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp \
-  --header "Authorization: Bearer $(gh auth token)"
+  --header "Authorization: Bearer YOUR_GITHUB_PAT"
 ```
 
 Restart your session and ask your agent to list your knowledge bases.
@@ -139,8 +162,8 @@ Your agent relays these verbatim, so they are listed here exactly as they appear
 | Message | Cause | What to do |
 | --- | --- | --- |
 | *Not signed in* — HTTP **401** | No credential reached the server. The `Authorization` header is missing from the connection. | Re-add the connection with the `--header` line above. |
-| *Invalid or expired GitHub token* — HTTP **401** | GitHub rejected the token: expired, revoked, or never valid. | `gh auth status`, then re-add the connection. Both 401s carry a `WWW-Authenticate` challenge, which is what lets a client tell "unauthenticated" from "broken". |
-| *You must be a member of this GitHub organization* | You aren't in the org you named — or your token can't see that you are. Membership is read from GitHub, and a token without the `read:org` scope makes a member look like a stranger. | Check the org spelling, then check the token's scopes. |
+| *Invalid or expired GitHub token* — HTTP **401** | GitHub rejected the token: expired, revoked, never valid — or, for a fine-grained token, still **pending an organization owner's approval**, which behaves identically. It can also mean you pasted `YOUR_GITHUB_PAT` without substituting it. | Check the token at [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens); if it says pending, an org owner has to approve it. Both 401s carry a `WWW-Authenticate` challenge, which is what lets a client tell "unauthenticated" from "broken". |
+| *You must be a member of this GitHub organization* | You aren't in the org you named — or your token can't see that you are. Membership is read from GitHub, so a token that can't see your memberships makes a member look like a stranger. | Check the org spelling. Then check the token: a **fine-grained** token has no scopes, so what matters is that its **resource owner** is that organization; a **classic** token needs the `read:org` scope. |
 | *`<org>` has used its hourly Glassdocs request allowance (300). It resets in about N minutes.* | The org hit the hourly tool-call limit — almost always an agent in a loop rather than a person. | Wait for the reset. If it keeps happening, something is retrying automatically. |
 | *"`<org>/<repo>`" is not a knowledge base in `<org>`* | The repo isn't registered as a KB, or it's archived. This applies to **reads as well as writes**. | Run `list_kbs`, or set the repo up as a KB in the [admin dashboard](admin.md). |
 | *Page is N kB; the limit is 1000 kB. Split it into several pages.* | `write_doc` was given more than the maximum page size. | Split the page. A KB page this large is usually several pages anyway. |
