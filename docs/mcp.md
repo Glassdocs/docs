@@ -51,7 +51,23 @@ When a query doesn't fit, the result carries a `truncated` field saying how many
 
 ## Authentication
 
-Your own **GitHub token** — the same credential the rest of the [managed API](api.md) takes. There is no Glassdocs API key, no OAuth consent screen, and no account to create.
+Two ways in. **Signing in with your browser is the better one**, and it is the only one some clients can use at all.
+
+### Browser sign-in (OAuth)
+
+Point a client at `https://app.glassdocs.site/mcp` with no header and, if it speaks OAuth, it opens a browser, you sign in with GitHub, and a consent screen tells you exactly which of your GitHub organizations' knowledge bases the client will be able to read and write. Approve it and you are connected. There is no credential to mint, paste, or keep anywhere.
+
+This is not only more convenient — it is the only option for hosted clients like **ChatGPT connectors**, which have no field for a custom header. They discover OAuth or they refuse to add the server.
+
+What the client ends up holding is a **Glassdocs access token**, not a GitHub one. It is valid for one hour, is refreshed automatically, and is bound to this server: presented anywhere else it is refused. Your GitHub credential never reaches the client.
+
+To disconnect, revoke the **Docs Chat** app under your GitHub [applications settings](https://github.com/settings/applications), or remove the connection in your client.
+
+### A GitHub token in a header
+
+Still supported, and nothing you have set up this way will stop working. Use it when your client can send a header and you would rather not sign in — or if it does not speak OAuth.
+
+It is your own **GitHub token** — the same credential the rest of the [managed API](api.md) takes.
 
 Use a **fine-grained personal access token**, minted at [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new). What it needs depends entirely on whether you want an agent to write:
 
@@ -78,29 +94,47 @@ A read-only token needing *no permissions* is not a simplification. Every read r
 
     Glassdocs uses exactly two of those (`read:org`, and repository writes only if you ask an agent to write). The rest is blast radius you're carrying for nothing, in a file on disk that a third-party client wrote. Prefer the fine-grained token above.
 
-Your token is never stored — it is verified against GitHub on each request and discarded. The only thing kept is an anonymous hourly request counter, keyed by a hash of your organization name, used to enforce the hourly allowance under [Limits](#limits). It holds no document content, no page names and no user identity.
+### What Glassdocs keeps
 
-The same token is what commits. When an agent writes a page, the commit is authored by **you** — the same mechanism the extension uses — so authorship, review and blame all work normally. Glassdocs never signs a change on your behalf.
+This differs between the two, and it is worth being precise about because the honest answer is no longer "nothing".
+
+**A token you paste in a header is never stored.** It is verified against GitHub on each request and discarded.
+
+**A browser sign-in does leave something behind.** To act as you on later requests — commit under your name, and check your organization memberships — Glassdocs holds one **GitHub App user token** per connection, encrypted at rest. Three things about it:
+
+- It is scoped to what the Glassdocs GitHub App was installed with on your organizations — the knowledge-base repositories — **not** to your whole account. A `gh auth token` pasted into a config file is a far larger thing to be carrying around.
+- It belongs to one connection. Revoking the app at GitHub, or deleting the connection, kills that one and nothing else.
+- It never reaches the MCP client. The client only ever holds the short-lived Glassdocs token described above.
+
+Whichever way you connect, the only other thing kept is an anonymous hourly request counter, keyed by a hash of your organization name, used to enforce the hourly allowance under [Limits](#limits). It holds no document content, no page names and no user identity.
+
+Either way, the same GitHub identity is what commits. When an agent writes a page, the commit is authored by **you** — the same mechanism the extension uses — so authorship, review and blame all work normally. Glassdocs never signs a change on your behalf.
 
 To revoke access, revoke the token at GitHub. There is no separate Glassdocs credential to hunt down — and this is the other reason to mint one for Glassdocs rather than reuse `gh auth token`: revoking a token minted for this costs you nothing else, while revoking the CLI's token signs you out of `gh` on every machine you use it from.
 
 ## Connecting
 
-Nothing to download. Mint the token described under [Authentication](#authentication), then substitute it for `YOUR_GITHUB_PAT`:
+Nothing to download. The URL on its own is enough:
+
+```bash
+claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp
+```
+
+Your client opens a browser, you sign in with GitHub, and you approve the connection. Restart your session and ask your agent to list your knowledge bases.
+
+If you would rather paste a credential — or your client does not speak OAuth — mint the token described under [Authentication](#a-github-token-in-a-header) and substitute it for `YOUR_GITHUB_PAT`:
 
 ```bash
 claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp \
   --header "Authorization: Bearer YOUR_GITHUB_PAT"
 ```
 
-Restart your session and ask your agent to list your knowledge bases.
-
 !!! warning "`https://app.glassdocs.site/mcp` is the only endpoint — this page's own URL is not one"
     The address of *this page* — `https://docs.glassdocs.site/mcp/` — is documentation, not a server. Point a client at it and it will hang rather than fail: the docs site answers **200 with HTML**, so the client reads that as a stream that opened and closed, and reconnects for as long as you leave it running. Nothing reports an error at either end. If your agent connects but never lists a knowledge base, check the URL you pasted.
 
 For Claude Desktop or Cursor, put the same URL and header in their MCP config. Any client that speaks HTTP transport works — there is no Glassdocs package to install.
 
-The `--header` is a temporary step: a browser sign-in is coming, after which the URL alone will do. An unauthenticated request already gets a proper **401** with the `WWW-Authenticate` challenge an OAuth-capable client looks for, so a client can tell an unauthenticated connection from a broken server. The metadata document that challenge points at is not served yet — a client that fetches it gets a clean 404, which correctly reads as "this server runs no authorization server". Nothing about your setup will need to change when sign-in lands.
+Both work, side by side, and a header connection you already made keeps working. An unauthenticated request gets a **401** with the `WWW-Authenticate` challenge an OAuth-capable client looks for; the metadata document it points at is now served, so a client discovers where to sign in and does the rest itself.
 
 Each tool takes an `org` argument, so one connection covers every organization you belong to.
 
@@ -161,7 +195,8 @@ Your agent relays these verbatim, so they are listed here exactly as they appear
 
 | Message | Cause | What to do |
 | --- | --- | --- |
-| *Not signed in* — HTTP **401** | No credential reached the server. The `Authorization` header is missing from the connection. | Re-add the connection with the `--header` line above. |
+| *Not signed in* — HTTP **401** | No credential reached the server. | If you connected with a header, it is missing — re-add the connection with the `--header` line above. If you signed in with a browser, your client did not follow the challenge; re-add the connection and complete the sign-in. |
+| *This Glassdocs access token is invalid, expired, or was issued for a different server.* — HTTP **401** | A browser-sign-in token that has expired and could not be refreshed, or one issued by a different Glassdocs deployment. Tokens are bound to the server that issued them and are refused anywhere else. | Your client normally refreshes silently. If it does not, remove and re-add the connection to sign in again. |
 | *Invalid or expired GitHub token* — HTTP **401** | GitHub rejected the token: expired, revoked, never valid — or, for a fine-grained token, still **pending an organization owner's approval**, which behaves identically. It can also mean you pasted `YOUR_GITHUB_PAT` without substituting it. | Check the token at [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens); if it says pending, an org owner has to approve it. Both 401s carry a `WWW-Authenticate` challenge, which is what lets a client tell "unauthenticated" from "broken". |
 | *You must be a member of this GitHub organization* | You aren't in the org you named — or your token can't see that you are. Membership is read from GitHub, so a token that can't see your memberships makes a member look like a stranger. | Check the org spelling. Then check the token: a **fine-grained** token has no scopes, so what matters is that its **resource owner** is that organization; a **classic** token needs the `read:org` scope. |
 | *`<org>` has used its hourly Glassdocs request allowance (300). It resets in about N minutes.* | The org hit the hourly tool-call limit — almost always an agent in a loop rather than a person. | Wait for the reset. If it keeps happening, something is retrying automatically. |
