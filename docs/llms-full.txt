@@ -1037,7 +1037,7 @@ Nothing to download. The URL on its own is enough:
 claude mcp add --transport http glassdocs https://app.glassdocs.site/mcp
 ```
 
-Your client opens a browser, you sign in with GitHub, and you approve the connection. Restart your session and ask your agent to list your knowledge bases.
+Your client will show the server as connected straight away — the tool list is public, so it can be read before you sign in. The browser prompt appears the first time your agent actually *uses* a tool. Either run `/mcp` in your session and sign in there, or just ask for something and sign in when prompted. You approve the connection on a consent screen that names exactly which organizations' knowledge bases the client will reach.
 
 If you would rather paste a credential — or your client does not speak OAuth — mint the token described under [Authentication](#a-github-token-in-a-header) and substitute it for `YOUR_GITHUB_PAT`:
 
