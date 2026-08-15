@@ -15,6 +15,7 @@ Glassdocs orchestrates; it does not host your data. The data plane — content, 
 | Identity records and one AES-GCM-encrypted org AI key | Glassdocs (org shared-key tier only, no content) |
 | Usage counters | Glassdocs — **token counts only**, never prompts or responses; per-request records exist only for the org shared-key tier |
 | KB inventory and audit log | Glassdocs — the inventory is regenerable from GitHub; audit records hold metadata (e.g. a file path and byte count), never content |
+| AI narration clips | A GitHub Release on your own KB repo, published to your site by your own CI. Glassdocs stores the work list (which pages are queued or done), never the audio and never the text |
 
 Editing keeps the same invariant: edits go through the [extension](extension.md) (the console offers a read-only page viewer), and the page body only *transits* the control plane — no document body is ever written to Glassdocs storage. Unsaved edits live in your browser.
 
@@ -65,6 +66,16 @@ Nothing is sent anywhere until you act. The extension reads the **active tab onl
     Switch to a BYO-key backend at any time to keep everything browser-to-provider.
 
 Reads and writes to your repos (fetching source files, commits, pull requests) go from your browser to the GitHub API with your own token, and are attributed to your GitHub identity.
+
+## Audio never reaches a speech vendor
+
+Both ways of listening to a KB are built so that no document text is handed to a third party.
+
+**For readers.** The **▶ Listen** control on every published page makes no network request of any kind. Speech is produced by the reader's own browser and operating system, using a voice the browser marks as installed on the device, and that voice is pinned on every utterance rather than left to a default that might be a cloud service. If no on-device voice exists the control refuses to speak rather than falling back. The **▶ AI** control fetches one file, only on a press, from the KB's own address inside its own Access gate. Neither control contacts Glassdocs, and neither reports anything about what is being read.
+
+**For the admin generating narration.** Synthesis runs in the admin's browser, in WebAssembly, on their own machine. There is no inference API, no model host, and no other third party in the path. Page text is read from your GitHub repo and passed to the browser through the control plane in the same passthrough way editing works: never written to Glassdocs storage. Nothing but the finished audio is uploaded, and it goes straight through to a GitHub Release on your own repo. Even a generation failure reports a code from a fixed list rather than a free-text message, so a failing sentence cannot escape in an error string. The voice model itself is served from Glassdocs' own storage.
+
+See [Listening](listening.md) for the full behaviour.
 
 ## Key and token custody
 
@@ -117,10 +128,11 @@ If your organization deploys the extension via Chrome enterprise policy, an admi
 
 ## Privacy policy
 
-The full privacy policy for the extension (published as "Docs Chat") is at **[glassdocs.site/privacy.html](https://glassdocs.site/privacy.html)**.
+The full privacy policy for the browser extension, now listed as **GlassDocs** and originally published as "Docs Chat", is at **[glassdocs.site/privacy.html](https://glassdocs.site/privacy.html)**.
 
 ## Related pages
 
 - [How it works](how-it-works.md) — the architecture behind these guarantees.
 - [Admin dashboard](admin.md) — the org-level controls described above.
+- [Listening](listening.md) — what listening and generating narration do and do not send.
 - [Extension](extension.md) · [Publishing](publishing.md) · [Hosting](hosting.md) · [API](api.md)

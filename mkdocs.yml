@@ -79,6 +79,7 @@ nav:
   - Publishing: publishing.md
   - Managed Hosting: hosting.md
   - Admin Dashboard: admin.md
+  - Listening: listening.md
   - Browser Extension: extension.md
   - MCP Server: mcp.md
   - Enterprise Deployment: enterprise.md

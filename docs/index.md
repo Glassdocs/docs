@@ -41,7 +41,7 @@ Details in [Publishing](publishing.md), [Hosting](hosting.md), and the [Security
 
 ### 3. Docs chat and the edit flow
 
-The Glassdocs browser extension (Docs Chat) attaches an AI side panel to any published KB page. Readers can:
+The Glassdocs browser extension attaches an AI side panel to any published KB page. Readers can:
 
 - **Ask** — chat about the page they're reading, with the page as context.
 - **Edit** — describe a change in plain language; the AI drafts the edit, shows a preview, and on approval the change is committed back to the source repo via GitHub, so the site republishes through the normal pipeline.
@@ -52,6 +52,12 @@ Not in a browser? The [MCP server](mcp.md) gives Claude Code, Claude Desktop and
 
 !!! note "Your docs never leave your accounts"
     This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, an audit log, a small registry of which repos are set up as KBs, and the GitHub App installation record — never your documents. See [Security](security.md).
+
+## Pages you can listen to
+
+Every published page carries a **▶ Listen** control in its header that reads the page aloud with a voice already installed on the reader's device. It needs no extension, no account and no setting, which is what lets it work on a phone, and it makes no network request at all.
+
+A KB can also carry an AI narration of each page. That is generated in an admin's own browser rather than by a speech vendor, stored on a release in your own repo, and published with the site. Readers get a second ▶ on pages whose narration matches the version they are looking at. See [Listening](listening.md).
 
 ## What Glassdocs is not
 
@@ -64,5 +70,6 @@ Not in a browser? The [MCP server](mcp.md) gives Claude Code, Claude Desktop and
 - [Getting started](getting-started.md) — stand up your first KB end to end.
 - [How it works](how-it-works.md) — the architecture, for the technically curious.
 - [Admin console](admin.md) — managing KBs, access, and deploys at [app.glassdocs.site](https://app.glassdocs.site).
+- [Listening](listening.md) — listening to a KB, and generating narration for it.
 - [Enterprise](enterprise.md) — org-wide rollout, BYO AI keys, and policy-managed extension install.
 - [API](api.md) — programmatic access to the control plane.

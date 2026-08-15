@@ -50,7 +50,7 @@ Details in [Publishing](publishing.md), [Hosting](hosting.md), and the [Security
 
 ### 3. Docs chat and the edit flow
 
-The Glassdocs browser extension (Docs Chat) attaches an AI side panel to any published KB page. Readers can:
+The Glassdocs browser extension attaches an AI side panel to any published KB page. Readers can:
 
 - **Ask** — chat about the page they're reading, with the page as context.
 - **Edit** — describe a change in plain language; the AI drafts the edit, shows a preview, and on approval the change is committed back to the source repo via GitHub, so the site republishes through the normal pipeline.
@@ -61,6 +61,12 @@ Not in a browser? The [MCP server](mcp.md) gives Claude Code, Claude Desktop and
 
 !!! note "Your docs never leave your accounts"
     This is the product's core design decision, not a footnote. Content lives in your GitHub repo; the published site lives in your Cloudflare account; access policy is derived from variables in your repo. The Glassdocs backend keeps identity, an encrypted org AI key if you bring one, usage counters, an audit log, a small registry of which repos are set up as KBs, and the GitHub App installation record — never your documents. See [Security](security.md).
+
+## Pages you can listen to
+
+Every published page carries a **▶ Listen** control in its header that reads the page aloud with a voice already installed on the reader's device. It needs no extension, no account and no setting, which is what lets it work on a phone, and it makes no network request at all.
+
+A KB can also carry an AI narration of each page. That is generated in an admin's own browser rather than by a speech vendor, stored on a release in your own repo, and published with the site. Readers get a second ▶ on pages whose narration matches the version they are looking at. See [Listening](listening.md).
 
 ## What Glassdocs is not
 
@@ -73,6 +79,7 @@ Not in a browser? The [MCP server](mcp.md) gives Claude Code, Claude Desktop and
 - [Getting started](getting-started.md) — stand up your first KB end to end.
 - [How it works](how-it-works.md) — the architecture, for the technically curious.
 - [Admin console](admin.md) — managing KBs, access, and deploys at [app.glassdocs.site](https://app.glassdocs.site).
+- [Listening](listening.md) — listening to a KB, and generating narration for it.
 - [Enterprise](enterprise.md) — org-wide rollout, BYO AI keys, and policy-managed extension install.
 - [API](api.md) — programmatic access to the control plane.
 
@@ -180,12 +187,18 @@ For the full security model behind the gate, see [Security](security.md).
 
 ## Step 8 — Install the browser extension
 
-With the site live, install the **Glassdocs browser extension (Docs Chat)** to chat about pages and make edits without leaving the site. The extension recognizes any published page that declares its source repo via a meta tag (see [How it works](how-it-works.md#how-a-site-opts-in-the-source-repo-meta-tag)) and adds a side panel where you can:
+With the site live, install the **Glassdocs browser extension** (listed on the Chrome Web Store as **GlassDocs**) to chat about pages and make edits without leaving the site. The extension recognizes any published page that declares its source repo via a meta tag (see [How it works](how-it-works.md#how-a-site-opts-in-the-source-repo-meta-tag)) and adds a side panel where you can:
 
 - **Ask** questions about the page you're reading.
 - **Edit** the page in plain language — the change is committed back to your repo via GitHub, and the site republishes automatically.
 
 See the [Extension guide](extension.md) for installation and sign-in, and [Enterprise](enterprise.md) for rolling the extension out org-wide by policy.
+
+## Step 9 — Optional: give the KB a voice
+
+Nothing to do here for basic listening. Every page you just published already carries a **▶ Listen** control that reads it aloud using a voice on the reader's own device, with no extension and no setup.
+
+If you also want a neural-voice narration of each page, set the repo variable `AUDIO_ENABLED` to `true` and generate the clips from the admin console's **Audio** section. Generation runs in your own browser, so it is slow, and it never sends your pages to a speech vendor. The [Listening](listening.md) page covers the whole flow.
 
 ## Troubleshooting
 
@@ -231,7 +244,8 @@ Glassdocs is a **zero-data control plane**: it orchestrates repos, deploys, acce
 | **Publisher workflow** | Your GitHub Actions | The template ships a thin caller workflow; the reusable publisher it invokes lives in the tag-pinned [`Glassdocs/publisher`](https://github.com/Glassdocs/publisher) repo (`@v1`). Builds the KB with **Zensical** and deploys to Cloudflare Pages, with fail-closed access gating. |
 | **Cloudflare Pages + Access** | Your Cloudflare account | Hosts the built site at `<project>.pages.dev`; Cloudflare Access gates every request behind an email-based policy. |
 | **Managed backend** | [app.glassdocs.site](https://app.glassdocs.site) | The control plane: admin console, GitHub App integration, AI proxy, usage metering, audit log. Holds identity and tokens — never content. |
-| **Browser extension** | The reader's browser | Docs Chat: an AI side panel on published pages for asking questions and proposing edits back to the source repo. |
+| **Browser extension** | The reader's browser | An AI side panel on published pages for asking questions and proposing edits back to the source repo. Listed on the Chrome Web Store as GlassDocs. |
+| **Audio** | The reader's browser, and an admin's browser | Every published page can be read aloud by the reader's own device. Optional neural narration is generated in an admin's browser and stored on a release in your KB repo. See [Listening](listening.md). |
 
 ## Control plane vs data plane
 
@@ -246,6 +260,7 @@ The central design decision is what Glassdocs does **not** do: host customer dat
 | Identity (tenant, seats), encrypted org AI key | Glassdocs database |
 | Usage/budget counters (token **counts** only) | Glassdocs database |
 | KB inventory index + audit log | Glassdocs database — the inventory is regenerable from GitHub; the audit log is the one genuinely control-plane-owned record |
+| AI narration clips | **A GitHub Release on your KB repo** — generated in an admin's browser, published to your site by your own CI. Glassdocs keeps only the queue of which pages are done |
 
 **Glassdocs never stores document content, prompts, or model responses.**
 
@@ -264,7 +279,7 @@ flowchart LR
   subgraph GD["Glassdocs control plane"]
     S["app.glassdocs.site · admin, AI proxy, audit"]
   end
-  E["Browser extension · Docs Chat"]
+  E["Browser extension · GlassDocs"]
 
   R -->|push triggers| CI
   CI -->|Zensical build + direct upload| P
@@ -553,6 +568,12 @@ It runs on pushes to `main` that touch the docs, their config, or the workflow i
 | --- | --- |
 | `CF_PAGES_PROJECT` | Cloudflare Pages project name. Becomes `<name>.pages.dev`. Lowercase letters, digits, and hyphens only; the publisher rejects anything else. |
 
+### Optional repo variable
+
+| Variable | Purpose |
+| --- | --- |
+| `AUDIO_ENABLED` | Set to exactly `true` to publish the AI narration clips generated from the [admin console](listening.md#generating-ai-narration) alongside the site. Off by default; any other value counts as off and the deploy says so. This does not affect the ▶ Listen control, which every published page carries regardless. |
+
 ### Required repo secrets
 
 | Secret | Purpose |
@@ -594,6 +615,17 @@ The publisher treats "the KB is live" and "the KB is gated" as the same event. I
 !!! note "pages.dev names are globally unique"
     A `<name>.pages.dev` subdomain is unique across all of Cloudflare, not just your account. If your chosen name is taken elsewhere, Cloudflare assigns a suffixed subdomain instead. The publisher detects the real subdomain and gates that, so the KB still works and is still protected; only the exact hostname differs.
 
+## What every built page carries
+
+Beyond your Markdown, the publisher stamps a few things into each page:
+
+- **A `source-repo` meta tag** naming the repository the page came from. This is the whole contract the [browser extension](extension.md) needs to offer chat and edits on the page.
+- **The page's source path and revision**, so a tool can tell which file produced the page and which version of it.
+- **The read-aloud script**, same-origin, which draws the **▶ Listen** control in the header. This ships on every KB unconditionally and is not gated on any variable.
+- **AI narration clips and their page stamps**, but only when the KB sets `AUDIO_ENABLED` to `true` and has clips on its `glassdocs-audio` release. See [Listening](listening.md).
+
+If a clip cannot be fetched during a deploy, the deploy still publishes and warns. Audio is a derived artifact, and blocking a documentation deploy over it would be the worse failure.
+
 ## Public mode
 
 Some KBs are meant for everyone: public product documentation, this site included. For those, the publisher supports an opt-in public mode:
@@ -633,6 +665,7 @@ A KB may also pin Zensical or add build plugins via its own `requirements.txt`; 
 
 - [Managed hosting](hosting.md) if you'd rather not run Cloudflare yourself
 - [Admin dashboard](admin.md) for the guided setup flow
+- [Listening](listening.md) for the ▶ Listen control and AI narration
 - [Security](security.md) for the full security model
 - [Writing a KB](authoring.md) for what goes in the pages themselves
 
@@ -775,6 +808,16 @@ Each KB row offers:
 - **Redeploy** — trigger a fresh deploy of the current content.
 - **Remove** — unpublish: stops future deploys and removes the KB from the list. The live site and Cloudflare project stay up; you can re-add the KB anytime via **Set up a KB**.
 
+## Audio
+
+The **Audio** section generates spoken versions of your pages with a neural voice, so readers get a ▶ AI button beside the ▶ Listen control every published page already carries.
+
+The model runs in your own browser, so no page text is sent to a speech vendor and none is stored by Glassdocs. You pick a scope (a whole org, one KB, only pages with no audio yet, or pages you tick), download the voice model once, take an estimate, and start. Generation is slow by design and the console shows a live projection that calibrates to your machine as it goes. Finished clips are stored on a GitHub Release in your own KB repo and reach the site on its next deploy.
+
+Two things to know before you start: audio publishing is off until you set the `AUDIO_ENABLED` repo variable to `true` yourself, and the tab has to stay open while a run is in flight. Closing it loses at most the page in flight, and reopening the section offers **Resume**.
+
+Full detail, including browser requirements and what does and does not leave your machine, is on the [Listening](listening.md) page.
+
 ## After deploying: verify the gate
 
 Once a KB reports **deployed**, open its `pages.dev` URL in a private window — you should be redirected to the Cloudflare Access login, not shown content. See [Hosting](hosting.md) for the verification steps and [Security & privacy](security.md) for why publishing is fail-closed by design.
@@ -782,10 +825,156 @@ Once a KB reports **deployed**, open its `pages.dev` URL in a private window —
 ## Related pages
 
 - [How it works](how-it-works.md) — the zero-data control-plane model.
+- [Listening](listening.md) — listening to a KB, and generating narration from the console.
 - [Getting started](getting-started.md) — the end-to-end first-KB walkthrough.
 - [Extension](extension.md) — what your teammates install.
 - [Enterprise](enterprise.md) — org-managed rollout options.
 - [API](api.md) — the endpoints behind the dashboard.
+
+
+---
+
+# Listening
+
+<!-- https://docs.glassdocs.site/listening/ -->
+
+# Listening to a knowledge base
+
+Every knowledge base published with Glassdocs can be listened to as well as read. There are two ways to hear a page, and they sit side by side in the site's own header:
+
+- **▶ Listen** reads the page with a speech voice already installed on the reader's device. It is on every page of every Glassdocs KB, needs no extension and no setup, and makes no network request at all.
+- **▶ AI** plays a narration generated ahead of time with a neural voice. It appears only on pages that have a current one.
+
+Generating the AI narration is an admin task, described in [Generating AI narration](#generating-ai-narration) below. Listening needs nothing from the reader.
+
+## Listening to a page
+
+The controls sit in the page header, next to the light/dark toggle. On a narrow screen the word "Listen" is dropped and only the ▶ glyph shows, to keep the header usable on a phone.
+
+### ▶ Listen
+
+This is browser speech synthesis. The reader's own browser and operating system produce the audio, using a voice installed on the device.
+
+- It is present on **every published page**, and no repo variable, plan, or setting can turn it off. It is not affected by the `AUDIO_ENABLED` variable that governs AI narration.
+- It works with **no extension installed**, which is what makes it reach phones. iOS Safari and Android Chrome cannot run a browser extension, but they can do this.
+- It reads the article and nothing else. Code blocks are skipped, headings get a pause, and the navigation, sidebar and "¶" permalink anchors are never spoken.
+- If the device has no on-device voice, the control still renders, greyed out, and says why. It never falls back to a cloud speech service, because a private KB's text is not something to hand to a synthesis vendor the reader never chose.
+
+There is no variable to switch it off, since there is nothing to save by switching it off. A KB that does not want the control on brand grounds can hide it from its own stylesheet:
+
+```css
+/* docs/stylesheets/extra.css, referenced from extra_css in mkdocs.yml */
+#glassdocs-read-aloud { display: none; }
+```
+
+### ▶ AI
+
+The AI button appears only when the page carries a narration that was generated from **the version of the page you are looking at**.
+
+The published page records the source revision it was built from, and each clip records the revision it was generated from. When those disagree, the clip is stale and the button is not rendered at all. In practice: edit a page and redeploy, and its ▶ AI disappears until someone regenerates it. There is no "this narration may be out of date" state for readers to misread, and a stale clip is never played.
+
+A clip covers the whole page as a single recording. It is served in Ogg Opus, and on a browser that cannot play that container the button is not shown.
+
+### The player
+
+Once something is playing, a ▾ appears beside the controls and opens a player. What it offers depends on which source is playing, because the two know different things about their own position:
+
+| | ▶ Listen | ▶ AI |
+| --- | --- | --- |
+| Progress | Share of the page read, plus an estimate of time remaining | Elapsed and total time, as a clock |
+| Seeking | Jump to any section from the list | Click anywhere on the progress bar |
+| Skip buttons | Previous and next sentence | Back and forward 10 seconds |
+| "Now", "Coming up" and "Read" | Yes, with the current sentence quoted and upcoming sections listed | No, because a clip is one continuous recording |
+
+Stop lives inside the player. Pressing Escape or clicking outside closes the player without stopping playback, and leaving the page stops it.
+
+Every control is a real button, so the player is reachable by keyboard and its labels are exposed to screen readers. The one exception worth knowing: the progress bar is operated by pointer only. Keyboard users can still skip, and can jump between sections from the list.
+
+### What listening sends
+
+This is the part worth stating precisely, because a knowledge base is often private.
+
+- **▶ Listen makes no network request whatsoever.** Not when the page loads, not when you press play, not when it finishes. The audio is produced by your own browser and operating system.
+- **▶ AI makes exactly one request, and only when you press it**: a GET for the audio file that the page itself names, on the KB's own address, behind whatever Access gate already protects the site. The clip is not preloaded, so a page you never press play on fetches nothing.
+- **Nothing is sent to Glassdocs.** No analytics, no telemetry, no identifier, no page text. The question "does this page have a narration?" is answered by two meta tags in the HTML you already downloaded, never by asking a server.
+
+One honest limit, which the control's own wording respects: no browser API reports which voice actually spoke. Glassdocs asks for a voice the browser marks as on-device and pins that voice on every utterance, so the request is unambiguous. The claim is about what is asked for, not a guarantee about where every operating system ultimately produced the sound.
+
+## Generating AI narration
+
+AI narration is produced in the admin console at [app.glassdocs.site/admin](https://app.glassdocs.site/admin/), under **Audio**. You need to be an admin of the GitHub org, the same as everywhere else in the console.
+
+**The speech model runs on your own machine**, in your browser, in WebAssembly. There is no inference API and no third-party speech service anywhere in the path. [Privacy, precisely](#privacy-precisely) below sets out exactly what moves where.
+
+### Turn it on for the KB first
+
+Audio publishing is off by default and is enabled per KB with a GitHub Actions **repository variable** on the KB repo:
+
+| Variable | Value | Effect |
+| --- | --- | --- |
+| `AUDIO_ENABLED` | exactly `true` | Clips generated for this KB are published with the site, and readers get ▶ AI on pages that have a current one |
+
+Set it on the KB repo under **Settings → Secrets and variables → Actions → Variables**. The console does not set it for you.
+
+!!! warning "The value must be the literal string `true`"
+    `1`, `yes`, `TRUE` and an empty value all count as off. A deploy that finds one of those says so in its log rather than guessing. With the variable off, the deploy is byte for byte what it was before: no audio directory, no manifest, nothing for a reader to click. ▶ Listen is unaffected either way.
+
+The console skips pages belonging to a KB whose variable is not set, so turn it on before generating rather than after.
+
+### The run
+
+1. **Choose what to generate.** Every knowledge base, one KB, only pages that have no audio yet, or a set of pages you tick individually.
+2. **Download the voice model**, once. It is about 93 MB and downloads only when you click the button, never in the background. It is cached afterwards, so later runs download nothing.
+3. **Press "Estimate and queue…".** This reads each selected page and counts its spoken words, then tells you how many pages, how many words, roughly how much audio that is, and roughly how long the machine will take. Accept it and the pages join the queue.
+4. **Press "Start generating".** Progress shows the page in flight, the chunk within it, and time remaining for both the page and the batch.
+
+### It is slow, and that is the trade
+
+Synthesis runs at roughly 3.8 seconds of computation per second of audio, on one CPU core. A 900-word page takes about 23 minutes. A few hundred pages is a multi-day job.
+
+That is the cost of not sending your documents to a speech vendor, and it is the same on every plan, free included. There is no faster paid tier, because there is no server-side generation to sell. The estimate calibrates to your actual machine after the first page, so the number you see gets more accurate as the run goes on.
+
+Practical consequences:
+
+- **The tab has to stay open and visible.** The console asks the browser to keep the screen awake, and tells you if the browser refuses. Closing the lid or quitting still stops it.
+- **Closing the tab loses at most the page in flight.** Everything else stays queued. Reopen the Audio section and the button reads "Resume", with the number of pages left.
+- **Pause is durable and shared.** It survives a reload and applies to everyone in the org, not just your tab.
+- **Two admins can generate at once.** The queue is server-side, so two tabs take different pages rather than duplicating work.
+
+### Browser requirements
+
+Generation needs a browser that can encode Opus through WebCodecs: **Chrome 94+, Firefox 130+, or Safari 16.4+**. A browser that cannot is told so plainly rather than being allowed to produce something unplayable. No GPU is required.
+
+### Publishing the clips
+
+Clips are stored as assets on a GitHub Release tagged `glassdocs-audio` **in your own KB repo**. Glassdocs does not keep them.
+
+They reach readers on the KB's **next deploy**: the publisher pulls the release assets into the built site, stamps each page with the clip it owns, and the ▶ AI button appears. Generating audio does not itself trigger a deploy, so push a change or press **Redeploy** in the console when you want the clips to go live. You can preview any clip from the console's inventory before it is published.
+
+If a clip cannot be fetched at deploy time, the deploy still succeeds and publishes the site without audio. A documentation deploy blocked by a missing narration would be the worse failure.
+
+## Privacy, precisely
+
+For readers:
+
+- ▶ Listen makes no network request at all.
+- ▶ AI fetches one file from your own site, only on a press.
+- Nothing about what a reader is reading reaches Glassdocs.
+
+For the admin generating audio:
+
+- **Synthesis happens on your machine**, in your browser. No inference service, no model host, and no other third party is involved.
+- **Page text is never uploaded from your browser, never stored by Glassdocs, and never sent to a third party.** It is read from your GitHub repo and passed through the Glassdocs API to your browser, in the same passthrough way [editing](how-it-works.md#editing-two-paths-both-passthrough) works. It is not written to Glassdocs storage at any point.
+- **Only the finished audio is uploaded**, and it goes straight through to a GitHub Release on your own repo. Even failures report a code from a fixed list rather than a message, so a failing sentence cannot leak in an error string.
+- **The voice model is downloaded from Glassdocs' own storage**, not from a third-party model host.
+- What Glassdocs keeps is the work list: which pages are queued, which are done, and which repo they belong to. Never text, never audio.
+
+## Related pages
+
+- [Admin dashboard](admin.md) — where the Audio section lives.
+- [Publishing](publishing.md) — the deploy that carries the clips to the site.
+- [Security and privacy](security.md) — the zero-data model these guarantees come from.
+- [Browser extension](extension.md) — reading and editing pages, with its own read-aloud in a newer release.
 
 
 ---
@@ -799,7 +988,7 @@ Once a KB reports **deployed**, open its `pages.dev` URL in a private window —
 The Glassdocs browser extension turns any published knowledge base into something you can talk to — and edit. Open the side panel on a docs page to ask questions about what you're reading; switch to Edit mode and an AI agent proposes concrete changes to the page's source in GitHub. You review a diff, then Apply to open a pull request or push a commit — every change attributed to your own GitHub identity. No "open the repo, find the file, clone, edit, PR" detour.
 
 !!! note "Store listing name"
-    The extension is currently listed on the Chrome Web Store as **Docs Chat** (v0.53.0). It is being renamed **GlassDocs** in its next release — same extension, same ID, same link.
+    The extension is listed on the Chrome Web Store as **GlassDocs**. It was originally published as **Docs Chat**; the rename changed the listing only — same extension, same item ID, and the old `docs-chat` store link still redirects to the current one. The GitHub App you authorize is still registered as **RocketLab Docs Chat App**, so that is the name you will see on GitHub's authorization screen.
 
 ## What it does
 
@@ -812,7 +1001,7 @@ The Glassdocs browser extension turns any published knowledge base into somethin
 
 Install from the Chrome Web Store:
 
-**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/docs-chat/ljbopnkkljoapnahdpodpbjlgkjccdoc)**
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/glassdocs/ljbopnkkljoapnahdpodpbjlgkjccdoc)**
 
 The listing is **unlisted** — reachable only via this link, not via store search. Store installs update automatically in the background.
 
@@ -880,6 +1069,14 @@ The side panel and repo detection work on **any** site that carries the `source-
 
 On any other site — including `*.glassdocs.site` hosts — opening the side panel from the toolbar icon injects the content script into the active tab, so the affordances appear there once the panel is open.
 
+!!! info "Changing in the next release"
+    A release is with the Chrome Web Store for review at the time of writing. Store reviews take days rather than minutes, and a release that changes where the extension runs is reviewed more slowly still, so the behaviour described above is what an installed extension does today. Once the update reaches you:
+
+    - The **Ask and Edit buttons only appear on a page that names a source repo.** Today they are offered on any `pages.dev` page, and on a page with no `source-repo` tag they do nothing when pressed. After the update, highlighting text on such a page produces no bar at all, and the side panel explains that the page has no linked repo instead of showing an empty chat.
+    - **The extension also runs on `*.glassdocs.site` pages** without needing the panel opened first. This needs no new permission, since the host was already in the extension's declared access.
+    - **Read aloud** arrives in the side panel: play the current page or just a highlighted selection with an on-device voice, hear an assistant reply spoken, and open a player with position, sections and skip controls. See [Listening](listening.md) for the equivalent that published pages already carry with no extension at all.
+    - **On the Glassdocs admin console itself**, the panel explains that you are on the control plane rather than a knowledge base, instead of offering a chat with nothing to talk about.
+
 ## GitHub identity
 
 The extension has no account or login of its own — GitHub is the identity. Signing in uses the **GitHub App device flow**: click **Sign in with GitHub**, enter the short code on github.com, and authorize. Tokens are stored in your browser's extension storage and refreshed automatically; they are never sent to any Glassdocs server, except that in Managed mode your token rides along as the bearer credential, where the backend verifies it per-request and stores nothing. See [Security](security.md) for the full model.
@@ -903,6 +1100,7 @@ The extension is for reading and editing the page in front of you. If you'd rath
 ## See also
 
 - [MCP server](mcp.md) — read your KBs from an AI coding agent
+- [Listening](listening.md) — listening to a published page, which needs no extension
 - [Getting Started](getting-started.md) — authoring conventions for the pages you'll be editing
 - [How it works](how-it-works.md) — the overall Glassdocs pipeline
 - [Enterprise deployment](enterprise.md) — force-install and shared configuration for organizations
@@ -978,7 +1176,7 @@ This is not only more convenient — it is the only option for hosted clients li
 
 What the client ends up holding is a **Glassdocs access token**, not a GitHub one. It is valid for one hour, is refreshed automatically, and is bound to this server: presented anywhere else it is refused. Your GitHub credential never reaches the client.
 
-To disconnect, revoke the **Docs Chat** app under your GitHub [applications settings](https://github.com/settings/applications), or remove the connection in your client.
+To disconnect, revoke the app under your GitHub [applications settings](https://github.com/settings/applications), or remove the connection in your client. It is listed there as **RocketLab Docs Chat App**, which is the GitHub App's registered name and predates the rename of the browser extension to GlassDocs.
 
 ### A GitHub token in a header
 
@@ -1480,6 +1678,7 @@ Glassdocs orchestrates; it does not host your data. The data plane — content, 
 | Identity records and one AES-GCM-encrypted org AI key | Glassdocs (org shared-key tier only, no content) |
 | Usage counters | Glassdocs — **token counts only**, never prompts or responses; per-request records exist only for the org shared-key tier |
 | KB inventory and audit log | Glassdocs — the inventory is regenerable from GitHub; audit records hold metadata (e.g. a file path and byte count), never content |
+| AI narration clips | A GitHub Release on your own KB repo, published to your site by your own CI. Glassdocs stores the work list (which pages are queued or done), never the audio and never the text |
 
 Editing keeps the same invariant: edits go through the [extension](extension.md) (the console offers a read-only page viewer), and the page body only *transits* the control plane — no document body is ever written to Glassdocs storage. Unsaved edits live in your browser.
 
@@ -1530,6 +1729,16 @@ Nothing is sent anywhere until you act. The extension reads the **active tab onl
     Switch to a BYO-key backend at any time to keep everything browser-to-provider.
 
 Reads and writes to your repos (fetching source files, commits, pull requests) go from your browser to the GitHub API with your own token, and are attributed to your GitHub identity.
+
+## Audio never reaches a speech vendor
+
+Both ways of listening to a KB are built so that no document text is handed to a third party.
+
+**For readers.** The **▶ Listen** control on every published page makes no network request of any kind. Speech is produced by the reader's own browser and operating system, using a voice the browser marks as installed on the device, and that voice is pinned on every utterance rather than left to a default that might be a cloud service. If no on-device voice exists the control refuses to speak rather than falling back. The **▶ AI** control fetches one file, only on a press, from the KB's own address inside its own Access gate. Neither control contacts Glassdocs, and neither reports anything about what is being read.
+
+**For the admin generating narration.** Synthesis runs in the admin's browser, in WebAssembly, on their own machine. There is no inference API, no model host, and no other third party in the path. Page text is read from your GitHub repo and passed to the browser through the control plane in the same passthrough way editing works: never written to Glassdocs storage. Nothing but the finished audio is uploaded, and it goes straight through to a GitHub Release on your own repo. Even a generation failure reports a code from a fixed list rather than a free-text message, so a failing sentence cannot escape in an error string. The voice model itself is served from Glassdocs' own storage.
+
+See [Listening](listening.md) for the full behaviour.
 
 ## Key and token custody
 
@@ -1582,12 +1791,13 @@ If your organization deploys the extension via Chrome enterprise policy, an admi
 
 ## Privacy policy
 
-The full privacy policy for the extension (published as "Docs Chat") is at **[glassdocs.site/privacy.html](https://glassdocs.site/privacy.html)**.
+The full privacy policy for the browser extension, now listed as **GlassDocs** and originally published as "Docs Chat", is at **[glassdocs.site/privacy.html](https://glassdocs.site/privacy.html)**.
 
 ## Related pages
 
 - [How it works](how-it-works.md) — the architecture behind these guarantees.
 - [Admin dashboard](admin.md) — the org-level controls described above.
+- [Listening](listening.md) — what listening and generating narration do and do not send.
 - [Extension](extension.md) · [Publishing](publishing.md) · [Hosting](hosting.md) · [API](api.md)
 
 

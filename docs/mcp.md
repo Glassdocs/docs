@@ -61,7 +61,7 @@ This is not only more convenient — it is the only option for hosted clients li
 
 What the client ends up holding is a **Glassdocs access token**, not a GitHub one. It is valid for one hour, is refreshed automatically, and is bound to this server: presented anywhere else it is refused. Your GitHub credential never reaches the client.
 
-To disconnect, revoke the **Docs Chat** app under your GitHub [applications settings](https://github.com/settings/applications), or remove the connection in your client.
+To disconnect, revoke the app under your GitHub [applications settings](https://github.com/settings/applications), or remove the connection in your client. It is listed there as **RocketLab Docs Chat App**, which is the GitHub App's registered name and predates the rename of the browser extension to GlassDocs.
 
 ### A GitHub token in a header
 

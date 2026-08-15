@@ -51,6 +51,12 @@ It runs on pushes to `main` that touch the docs, their config, or the workflow i
 | --- | --- |
 | `CF_PAGES_PROJECT` | Cloudflare Pages project name. Becomes `<name>.pages.dev`. Lowercase letters, digits, and hyphens only; the publisher rejects anything else. |
 
+### Optional repo variable
+
+| Variable | Purpose |
+| --- | --- |
+| `AUDIO_ENABLED` | Set to exactly `true` to publish the AI narration clips generated from the [admin console](listening.md#generating-ai-narration) alongside the site. Off by default; any other value counts as off and the deploy says so. This does not affect the ▶ Listen control, which every published page carries regardless. |
+
 ### Required repo secrets
 
 | Secret | Purpose |
@@ -92,6 +98,17 @@ The publisher treats "the KB is live" and "the KB is gated" as the same event. I
 !!! note "pages.dev names are globally unique"
     A `<name>.pages.dev` subdomain is unique across all of Cloudflare, not just your account. If your chosen name is taken elsewhere, Cloudflare assigns a suffixed subdomain instead. The publisher detects the real subdomain and gates that, so the KB still works and is still protected; only the exact hostname differs.
 
+## What every built page carries
+
+Beyond your Markdown, the publisher stamps a few things into each page:
+
+- **A `source-repo` meta tag** naming the repository the page came from. This is the whole contract the [browser extension](extension.md) needs to offer chat and edits on the page.
+- **The page's source path and revision**, so a tool can tell which file produced the page and which version of it.
+- **The read-aloud script**, same-origin, which draws the **▶ Listen** control in the header. This ships on every KB unconditionally and is not gated on any variable.
+- **AI narration clips and their page stamps**, but only when the KB sets `AUDIO_ENABLED` to `true` and has clips on its `glassdocs-audio` release. See [Listening](listening.md).
+
+If a clip cannot be fetched during a deploy, the deploy still publishes and warns. Audio is a derived artifact, and blocking a documentation deploy over it would be the worse failure.
+
 ## Public mode
 
 Some KBs are meant for everyone: public product documentation, this site included. For those, the publisher supports an opt-in public mode:
@@ -131,5 +148,6 @@ A KB may also pin Zensical or add build plugins via its own `requirements.txt`; 
 
 - [Managed hosting](hosting.md) if you'd rather not run Cloudflare yourself
 - [Admin dashboard](admin.md) for the guided setup flow
+- [Listening](listening.md) for the ▶ Listen control and AI narration
 - [Security](security.md) for the full security model
 - [Writing a KB](authoring.md) for what goes in the pages themselves

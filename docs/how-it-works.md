@@ -10,7 +10,8 @@ Glassdocs is a **zero-data control plane**: it orchestrates repos, deploys, acce
 | **Publisher workflow** | Your GitHub Actions | The template ships a thin caller workflow; the reusable publisher it invokes lives in the tag-pinned [`Glassdocs/publisher`](https://github.com/Glassdocs/publisher) repo (`@v1`). Builds the KB with **Zensical** and deploys to Cloudflare Pages, with fail-closed access gating. |
 | **Cloudflare Pages + Access** | Your Cloudflare account | Hosts the built site at `<project>.pages.dev`; Cloudflare Access gates every request behind an email-based policy. |
 | **Managed backend** | [app.glassdocs.site](https://app.glassdocs.site) | The control plane: admin console, GitHub App integration, AI proxy, usage metering, audit log. Holds identity and tokens — never content. |
-| **Browser extension** | The reader's browser | Docs Chat: an AI side panel on published pages for asking questions and proposing edits back to the source repo. |
+| **Browser extension** | The reader's browser | An AI side panel on published pages for asking questions and proposing edits back to the source repo. Listed on the Chrome Web Store as GlassDocs. |
+| **Audio** | The reader's browser, and an admin's browser | Every published page can be read aloud by the reader's own device. Optional neural narration is generated in an admin's browser and stored on a release in your KB repo. See [Listening](listening.md). |
 
 ## Control plane vs data plane
 
@@ -25,6 +26,7 @@ The central design decision is what Glassdocs does **not** do: host customer dat
 | Identity (tenant, seats), encrypted org AI key | Glassdocs database |
 | Usage/budget counters (token **counts** only) | Glassdocs database |
 | KB inventory index + audit log | Glassdocs database — the inventory is regenerable from GitHub; the audit log is the one genuinely control-plane-owned record |
+| AI narration clips | **A GitHub Release on your KB repo** — generated in an admin's browser, published to your site by your own CI. Glassdocs keeps only the queue of which pages are done |
 
 **Glassdocs never stores document content, prompts, or model responses.**
 
@@ -43,7 +45,7 @@ flowchart LR
   subgraph GD["Glassdocs control plane"]
     S["app.glassdocs.site · admin, AI proxy, audit"]
   end
-  E["Browser extension · Docs Chat"]
+  E["Browser extension · GlassDocs"]
 
   R -->|push triggers| CI
   CI -->|Zensical build + direct upload| P

@@ -70,6 +70,16 @@ Each KB row offers:
 - **Redeploy** — trigger a fresh deploy of the current content.
 - **Remove** — unpublish: stops future deploys and removes the KB from the list. The live site and Cloudflare project stay up; you can re-add the KB anytime via **Set up a KB**.
 
+## Audio
+
+The **Audio** section generates spoken versions of your pages with a neural voice, so readers get a ▶ AI button beside the ▶ Listen control every published page already carries.
+
+The model runs in your own browser, so no page text is sent to a speech vendor and none is stored by Glassdocs. You pick a scope (a whole org, one KB, only pages with no audio yet, or pages you tick), download the voice model once, take an estimate, and start. Generation is slow by design and the console shows a live projection that calibrates to your machine as it goes. Finished clips are stored on a GitHub Release in your own KB repo and reach the site on its next deploy.
+
+Two things to know before you start: audio publishing is off until you set the `AUDIO_ENABLED` repo variable to `true` yourself, and the tab has to stay open while a run is in flight. Closing it loses at most the page in flight, and reopening the section offers **Resume**.
+
+Full detail, including browser requirements and what does and does not leave your machine, is on the [Listening](listening.md) page.
+
 ## After deploying: verify the gate
 
 Once a KB reports **deployed**, open its `pages.dev` URL in a private window — you should be redirected to the Cloudflare Access login, not shown content. See [Hosting](hosting.md) for the verification steps and [Security & privacy](security.md) for why publishing is fail-closed by design.
@@ -77,6 +87,7 @@ Once a KB reports **deployed**, open its `pages.dev` URL in a private window —
 ## Related pages
 
 - [How it works](how-it-works.md) — the zero-data control-plane model.
+- [Listening](listening.md) — listening to a KB, and generating narration from the console.
 - [Getting started](getting-started.md) — the end-to-end first-KB walkthrough.
 - [Extension](extension.md) — what your teammates install.
 - [Enterprise](enterprise.md) — org-managed rollout options.

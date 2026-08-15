@@ -3,7 +3,7 @@
 The Glassdocs browser extension turns any published knowledge base into something you can talk to — and edit. Open the side panel on a docs page to ask questions about what you're reading; switch to Edit mode and an AI agent proposes concrete changes to the page's source in GitHub. You review a diff, then Apply to open a pull request or push a commit — every change attributed to your own GitHub identity. No "open the repo, find the file, clone, edit, PR" detour.
 
 !!! note "Store listing name"
-    The extension is currently listed on the Chrome Web Store as **Docs Chat** (v0.53.0). It is being renamed **GlassDocs** in its next release — same extension, same ID, same link.
+    The extension is listed on the Chrome Web Store as **GlassDocs**. It was originally published as **Docs Chat**; the rename changed the listing only — same extension, same item ID, and the old `docs-chat` store link still redirects to the current one. The GitHub App you authorize is still registered as **RocketLab Docs Chat App**, so that is the name you will see on GitHub's authorization screen.
 
 ## What it does
 
@@ -16,7 +16,7 @@ The Glassdocs browser extension turns any published knowledge base into somethin
 
 Install from the Chrome Web Store:
 
-**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/docs-chat/ljbopnkkljoapnahdpodpbjlgkjccdoc)**
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/glassdocs/ljbopnkkljoapnahdpodpbjlgkjccdoc)**
 
 The listing is **unlisted** — reachable only via this link, not via store search. Store installs update automatically in the background.
 
@@ -84,6 +84,14 @@ The side panel and repo detection work on **any** site that carries the `source-
 
 On any other site — including `*.glassdocs.site` hosts — opening the side panel from the toolbar icon injects the content script into the active tab, so the affordances appear there once the panel is open.
 
+!!! info "Changing in the next release"
+    A release is with the Chrome Web Store for review at the time of writing. Store reviews take days rather than minutes, and a release that changes where the extension runs is reviewed more slowly still, so the behaviour described above is what an installed extension does today. Once the update reaches you:
+
+    - The **Ask and Edit buttons only appear on a page that names a source repo.** Today they are offered on any `pages.dev` page, and on a page with no `source-repo` tag they do nothing when pressed. After the update, highlighting text on such a page produces no bar at all, and the side panel explains that the page has no linked repo instead of showing an empty chat.
+    - **The extension also runs on `*.glassdocs.site` pages** without needing the panel opened first. This needs no new permission, since the host was already in the extension's declared access.
+    - **Read aloud** arrives in the side panel: play the current page or just a highlighted selection with an on-device voice, hear an assistant reply spoken, and open a player with position, sections and skip controls. See [Listening](listening.md) for the equivalent that published pages already carry with no extension at all.
+    - **On the Glassdocs admin console itself**, the panel explains that you are on the control plane rather than a knowledge base, instead of offering a chat with nothing to talk about.
+
 ## GitHub identity
 
 The extension has no account or login of its own — GitHub is the identity. Signing in uses the **GitHub App device flow**: click **Sign in with GitHub**, enter the short code on github.com, and authorize. Tokens are stored in your browser's extension storage and refreshed automatically; they are never sent to any Glassdocs server, except that in Managed mode your token rides along as the bearer credential, where the backend verifies it per-request and stores nothing. See [Security](security.md) for the full model.
@@ -107,6 +115,7 @@ The extension is for reading and editing the page in front of you. If you'd rath
 ## See also
 
 - [MCP server](mcp.md) — read your KBs from an AI coding agent
+- [Listening](listening.md) — listening to a published page, which needs no extension
 - [Getting Started](getting-started.md) — authoring conventions for the pages you'll be editing
 - [How it works](how-it-works.md) — the overall Glassdocs pipeline
 - [Enterprise deployment](enterprise.md) — force-install and shared configuration for organizations

@@ -95,12 +95,18 @@ For the full security model behind the gate, see [Security](security.md).
 
 ## Step 8 — Install the browser extension
 
-With the site live, install the **Glassdocs browser extension (Docs Chat)** to chat about pages and make edits without leaving the site. The extension recognizes any published page that declares its source repo via a meta tag (see [How it works](how-it-works.md#how-a-site-opts-in-the-source-repo-meta-tag)) and adds a side panel where you can:
+With the site live, install the **Glassdocs browser extension** (listed on the Chrome Web Store as **GlassDocs**) to chat about pages and make edits without leaving the site. The extension recognizes any published page that declares its source repo via a meta tag (see [How it works](how-it-works.md#how-a-site-opts-in-the-source-repo-meta-tag)) and adds a side panel where you can:
 
 - **Ask** questions about the page you're reading.
 - **Edit** the page in plain language — the change is committed back to your repo via GitHub, and the site republishes automatically.
 
 See the [Extension guide](extension.md) for installation and sign-in, and [Enterprise](enterprise.md) for rolling the extension out org-wide by policy.
+
+## Step 9 — Optional: give the KB a voice
+
+Nothing to do here for basic listening. Every page you just published already carries a **▶ Listen** control that reads it aloud using a voice on the reader's own device, with no extension and no setup.
+
+If you also want a neural-voice narration of each page, set the repo variable `AUDIO_ENABLED` to `true` and generate the clips from the admin console's **Audio** section. Generation runs in your own browser, so it is slow, and it never sends your pages to a speech vendor. The [Listening](listening.md) page covers the whole flow.
 
 ## Troubleshooting
 
